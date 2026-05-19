@@ -1,7 +1,7 @@
 // app/(auth)/login/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Droplet } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, user, isLoading } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!isLoading && user && user.role) {
+      const dashboardUrl = `/dashboard/${user.role}`;
+      router.push(dashboardUrl);
+    }
+  }, [user, isLoading, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,29 +43,43 @@ export default function LoginPage() {
       const data = await response.json();
 
       if (response.ok) {
+        console.log('Login response:', data);
+
+        // Ensure user object has role
+        if (!data.user || !data.user.role) {
+          console.error('User role missing in response:', data.user);
+          toast.error('Invalid user data received from server');
+          setLoading(false);
+          return;
+        }
+
+        console.log('User role from server:', data.user.role);
+
+        // Store in localStorage
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        
+
+        // Verify storage
+        const storedUser = localStorage.getItem('user');
+        console.log('Stored user:', JSON.parse(storedUser || '{}'));
+
+        // Update auth state
+        login(data.token, data.user);
+
         toast.success('Logged in successfully!');
 
-        // Redirect based on role
-        switch(data.user.role) {
-          case 'donor':
-            router.push('/dashboard/donor');
-            break;
-          case 'hospital':
-            router.push('/dashboard/hospital');
-            break;
-          case 'admin':
-            router.push('/dashboard/admin');
-            break;
-          default:
-            router.push('/');
-        }
+        // Navigate after state update
+        setTimeout(() => {
+          const finalUser = localStorage.getItem('user');
+          const parsedUser = JSON.parse(finalUser || '{}');
+          console.log('Final user before navigation:', parsedUser);
+          router.push(`/dashboard/${parsedUser.role}`);
+        }, 200);
       } else {
-        toast.error(data.message || 'Login failed');
+        toast.error(data.message || data.error || 'Login failed');
       }
     } catch (error) {
+      console.error('Login error:', error);
       toast.error('Something went wrong');
     } finally {
       setLoading(false);
@@ -84,7 +108,7 @@ export default function LoginPage() {
                 placeholder="donor@example.com"
                 required
                 value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
             <div>
@@ -94,14 +118,14 @@ export default function LoginPage() {
                 type="password"
                 required
                 value={formData.password}
-                onChange={(e) => setFormData({...formData, password: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
             <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
             </Button>
           </form>
-          
+
           <div className="mt-4 text-center text-sm">
             Don't have an account?{" "}
             <Link href="/register" className="text-red-600 hover:underline">

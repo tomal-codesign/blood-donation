@@ -2,23 +2,32 @@
 'use client';
 
 import Link from 'next/link';
-import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Droplet, Menu, X, Heart, User, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const handleScroll = () => {
       setScrolled(window.scrollY > 10);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleLogout = () => {
+    logout();
+    toast.success('Logged out successfully');
+    window.location.href = '/login';
+  };
 
   const getDashboardLink = () => {
     if (!user) return '/login';
@@ -30,9 +39,26 @@ export default function Navbar() {
     }
   };
 
+  // Don't render until mounted to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <nav className="sticky top-0 z-50 bg-white shadow-md">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2">
+              <Droplet className="h-8 w-8 text-red-600" />
+              <span className="font-bold text-xl">BloodDonation</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
-    <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-sm shadow-md'
-      }`}>
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${
+      scrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-sm shadow-md'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
@@ -62,7 +88,7 @@ export default function Navbar() {
                     Dashboard
                   </Button>
                 </Link>
-                <Button onClick={logout} variant="destructive" size="sm">
+                <Button onClick={handleLogout} variant="destructive" size="sm">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
@@ -99,7 +125,7 @@ export default function Navbar() {
               <MobileNavLink href="/emergency" onClick={() => setIsMenuOpen(false)} isEmergency>Emergency</MobileNavLink>
               <MobileNavLink href="/about" onClick={() => setIsMenuOpen(false)}>About</MobileNavLink>
               <MobileNavLink href="/contact" onClick={() => setIsMenuOpen(false)}>Contact</MobileNavLink>
-
+              
               {user ? (
                 <>
                   <MobileNavLink href={getDashboardLink()} onClick={() => setIsMenuOpen(false)}>
@@ -107,7 +133,7 @@ export default function Navbar() {
                   </MobileNavLink>
                   <button
                     onClick={() => {
-                      logout();
+                      handleLogout();
                       setIsMenuOpen(false);
                     }}
                     className="text-left px-4 py-2 text-red-600 font-medium hover:bg-red-50 rounded-lg transition"
@@ -136,10 +162,11 @@ function NavLink({ href, children, isEmergency }: { href: string; children: Reac
   return (
     <Link
       href={href}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isEmergency
+      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+        isEmergency
           ? 'bg-red-600 text-white hover:bg-red-700'
           : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-        }`}
+      }`}
     >
       {isEmergency && <Heart className="h-4 w-4 inline mr-1" />}
       {children}
@@ -147,9 +174,9 @@ function NavLink({ href, children, isEmergency }: { href: string; children: Reac
   );
 }
 
-function MobileNavLink({ href, children, onClick, isEmergency, isRegister }: {
-  href: string;
-  children: React.ReactNode;
+function MobileNavLink({ href, children, onClick, isEmergency, isRegister }: { 
+  href: string; 
+  children: React.ReactNode; 
   onClick: () => void;
   isEmergency?: boolean;
   isRegister?: boolean;
@@ -158,12 +185,13 @@ function MobileNavLink({ href, children, onClick, isEmergency, isRegister }: {
     <Link
       href={href}
       onClick={onClick}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${isEmergency
+      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
+        isEmergency
           ? 'bg-red-600 text-white'
           : isRegister
-            ? 'bg-red-600 text-white'
-            : 'text-gray-700 hover:bg-red-50'
-        }`}
+          ? 'bg-red-600 text-white'
+          : 'text-gray-700 hover:bg-red-50'
+      }`}
     >
       {children}
     </Link>

@@ -29,24 +29,12 @@ import {
   Clock,
   Download,
   Gift,
-  X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+import { useAuth, User as AuthUser } from '@/hooks/useAuth';
 
 // Type definitions
-interface User {
-  id: string;
-  email: string;
-  role: 'donor' | 'patient' | 'hospital' | 'admin';
-  full_name: string;
-  phone: string;
-  city: string;
-  blood_group?: string;
-  location_lat?: number;
-  location_lng?: number;
-}
-
 interface NavItem {
   name: string;
   href: string;
@@ -60,46 +48,7 @@ interface RoleConfig {
   items: NavItem[];
 }
 
-// Auth hook with role check
-const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    try {
-      const token = localStorage.getItem('token');
-      const userData = localStorage.getItem('user');
-      if (token && userData) {
-        const parsedUser = JSON.parse(userData);
-        setUser({
-          id: parsedUser.id || '',
-          email: parsedUser.email || '',
-          role: parsedUser.role || 'donor',
-          full_name: parsedUser.full_name || 'User',
-          phone: parsedUser.phone || '',
-          city: parsedUser.city || '',
-          blood_group: parsedUser.blood_group || 'O+',
-          ...parsedUser
-        });
-      }
-    } catch (error) {
-      console.error('Error loading user:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    toast.success('Logged out successfully');
-    window.location.href = '/login';
-  };
-
-  return { user, loading, logout };
-};
-
-// Role-based navigation items with proper typing
+// Role-based navigation items
 const getNavItems = (role: string): RoleConfig => {
   const roleConfigs: Record<string, RoleConfig> = {
     donor: {
@@ -169,30 +118,51 @@ const getInitials = (name: string | undefined | null): string => {
 };
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, loading, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
+  // Debug log
   useEffect(() => {
-    if (!loading && !user) {
+    console.log('Dashboard Layout - User:', user);
+    console.log('Dashboard Layout - Loading:', isLoading);
+    console.log('Dashboard Layout - Pathname:', pathname);
+  }, [user, isLoading, pathname]);
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      console.log('No user, redirecting to login');
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [user, isLoading, router]);
 
-  // Role-based access control - redirect if wrong dashboard
+  // Role-based access control
   useEffect(() => {
     if (user) {
       const pathRole = pathname?.split('/')[2];
+      console.log('Path role:', pathRole);
+      console.log('User role:', user.role);
+
+      // Check if user has role property
+      if (!user.role) {
+        console.error('User role is undefined!', user);
+        toast.error('User role not found. Please login again.');
+        logout();
+        router.push('/login');
+        return;
+      }
+
       if (pathRole && pathRole !== user.role) {
+        console.log(`Access denied: ${pathRole} vs ${user.role}`);
         toast.error(`Access denied. You are not authorized to access ${pathRole} dashboard.`);
         router.push(`/dashboard/${user.role}`);
       }
     }
-  }, [user, pathname, router]);
+  }, [user, pathname, router, logout]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
         <div className="text-center">
@@ -203,11 +173,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     );
   }
 
-  if (!user) return null;
+  if (!user || !user.role) return null;
 
   const roleConfig = getNavItems(user.role);
   const navItems = roleConfig.items;
-  // Fixed: Added proper type for the find callback parameter
   const currentPage = navItems.find((item: NavItem) => item.href === pathname)?.name || 'Dashboard';
 
   return (
@@ -337,9 +306,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 }
 
-// Sidebar Component with proper typing
+// Sidebar Component
 interface SidebarContentProps {
-  user: User;
+  user: AuthUser;
   navItems: NavItem[];
   pathname: string;
   roleConfig: RoleConfig;
@@ -348,14 +317,14 @@ interface SidebarContentProps {
   logout: () => void;
 }
 
-function SidebarContent({ 
-  user, 
-  navItems, 
-  pathname, 
-  roleConfig, 
-  onNavigate, 
-  getInitials, 
-  logout 
+function SidebarContent({
+  user,
+  navItems,
+  pathname,
+  roleConfig,
+  onNavigate,
+  getInitials,
+  logout
 }: SidebarContentProps) {
   const router = useRouter();
 
@@ -402,8 +371,8 @@ function SidebarContent({
                   router.push(item.href);
                 }}
                 className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${isActive
-                    ? 'bg-red-50 text-red-600'
-                    : 'text-gray-700 hover:bg-gray-100'
+                  ? 'bg-red-50 text-red-600'
+                  : 'text-gray-700 hover:bg-gray-100'
                   }`}
               >
                 <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-red-600' : 'text-gray-500'}`} />

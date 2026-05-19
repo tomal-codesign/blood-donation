@@ -1,7 +1,7 @@
 // app/(auth)/register/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -11,9 +11,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Droplet } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState('donor');
   const [formData, setFormData] = useState({
@@ -24,6 +26,13 @@ export default function RegisterPage() {
     city: '',
     blood_group: ''
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push(`/dashboard/${user.role}`);
+    }
+  }, [user, router]);
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
   const cities = ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barishal', 'Rangpur'];
@@ -51,9 +60,10 @@ export default function RegisterPage() {
         toast.success('Registration successful! Please login.');
         router.push('/login');
       } else {
-        toast.error(data.message || 'Registration failed');
+        toast.error(data.message || data.error || 'Registration failed');
       }
     } catch (error) {
+      console.error('Registration error:', error);
       toast.error('Something went wrong');
     } finally {
       setLoading(false);
