@@ -2,8 +2,9 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Droplet, Menu, X, Heart, User, LogOut } from 'lucide-react';
+import { Menu, X, Heart, User, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -46,8 +47,13 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <Droplet className="h-8 w-8 text-red-600" />
-              <span className="font-bold text-xl">BloodDonation</span>
+              <Image
+                src="/logo-new.png"
+                alt="BloodDonation Logo"
+                width={200}
+                height={32}
+                className="h-8 object-contain"
+              />
             </div>
           </div>
         </div>
@@ -56,24 +62,28 @@ export default function Navbar() {
   }
 
   return (
-    <nav className={`sticky top-0 z-50 transition-all duration-300 ${
-      scrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-sm shadow-md'
-    }`}>
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-lg' : 'bg-white/95 backdrop-blur-sm shadow-md'
+      }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
+          {/* Logo with Image */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <Droplet className="h-8 w-8 text-red-600 group-hover:scale-110 transition-transform" />
-            <span className="font-bold text-xl bg-gradient-to-r from-gray-800 to-red-600 bg-clip-text text-transparent">
-              BloodDonation
-            </span>
+            <div className="relative">
+              <Image
+                src="/logo-new.png"
+                alt="BloodDonation Logo"
+                width={200}
+                height={32}
+                className="h-10 w-auto object-contain"
+              />
+            </div>
           </Link>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex space-x-1">
             <NavLink href="/">Home</NavLink>
             <NavLink href="/find-donor">Find Donor</NavLink>
-            <NavLink href="/emergency" isEmergency>Emergency</NavLink>
+            <NavLink href="/emergency">Emergency</NavLink>
             <NavLink href="/about">About</NavLink>
             <NavLink href="/contact">Contact</NavLink>
           </div>
@@ -83,12 +93,12 @@ export default function Navbar() {
             {user ? (
               <>
                 <Link href={getDashboardLink()}>
-                  <Button variant="outline" className="border-red-200 hover:bg-red-50">
+                  <Button variant="outline" className="border-red-200 hover:bg-red-50 cursor-pointer">
                     <User className="h-4 w-4 mr-2" />
                     Dashboard
                   </Button>
                 </Link>
-                <Button onClick={handleLogout} variant="destructive" size="sm">
+                <Button onClick={handleLogout} variant="destructive" size="sm" className="cursor-pointer text-white">
                   <LogOut className="h-4 w-4 mr-2" />
                   Logout
                 </Button>
@@ -96,10 +106,12 @@ export default function Navbar() {
             ) : (
               <>
                 <Link href="/login">
-                  <Button variant="outline">Login</Button>
+                  <Button variant="outline" className="cursor-pointer hover:bg-red-50">
+                    Login
+                  </Button>
                 </Link>
                 <Link href="/register">
-                  <Button className="bg-red-600 hover:bg-red-700">
+                  <Button className="bg-red-600 hover:bg-red-700 cursor-pointer">
                     Register
                   </Button>
                 </Link>
@@ -122,10 +134,10 @@ export default function Navbar() {
             <div className="flex flex-col space-y-3">
               <MobileNavLink href="/" onClick={() => setIsMenuOpen(false)}>Home</MobileNavLink>
               <MobileNavLink href="/find-donor" onClick={() => setIsMenuOpen(false)}>Find Donor</MobileNavLink>
-              <MobileNavLink href="/emergency" onClick={() => setIsMenuOpen(false)} isEmergency>Emergency</MobileNavLink>
+              <MobileNavLink href="/emergency" onClick={() => setIsMenuOpen(false)}>Emergency</MobileNavLink>
               <MobileNavLink href="/about" onClick={() => setIsMenuOpen(false)}>About</MobileNavLink>
               <MobileNavLink href="/contact" onClick={() => setIsMenuOpen(false)}>Contact</MobileNavLink>
-              
+
               {user ? (
                 <>
                   <MobileNavLink href={getDashboardLink()} onClick={() => setIsMenuOpen(false)}>
@@ -162,11 +174,10 @@ function NavLink({ href, children, isEmergency }: { href: string; children: Reac
   return (
     <Link
       href={href}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-        isEmergency
-          ? 'bg-red-600 text-white hover:bg-red-700'
-          : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
-      }`}
+      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isEmergency
+        ? 'bg-red-600 text-white hover:bg-red-700'
+        : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
+        }`}
     >
       {isEmergency && <Heart className="h-4 w-4 inline mr-1" />}
       {children}
@@ -174,9 +185,9 @@ function NavLink({ href, children, isEmergency }: { href: string; children: Reac
   );
 }
 
-function MobileNavLink({ href, children, onClick, isEmergency, isRegister }: { 
-  href: string; 
-  children: React.ReactNode; 
+function MobileNavLink({ href, children, onClick, isEmergency, isRegister }: {
+  href: string;
+  children: React.ReactNode;
   onClick: () => void;
   isEmergency?: boolean;
   isRegister?: boolean;
@@ -185,13 +196,12 @@ function MobileNavLink({ href, children, onClick, isEmergency, isRegister }: {
     <Link
       href={href}
       onClick={onClick}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-        isEmergency
-          ? 'bg-red-600 text-white'
-          : isRegister
+      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${isEmergency
+        ? 'bg-red-600 text-white'
+        : isRegister
           ? 'bg-red-600 text-white'
           : 'text-gray-700 hover:bg-red-50'
-      }`}
+        }`}
     >
       {children}
     </Link>

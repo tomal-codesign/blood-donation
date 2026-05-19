@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   LayoutDashboard,
   Droplet,
@@ -227,7 +228,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="lg:ml-72">
         {/* Header */}
         <header className="bg-white shadow-sm sticky top-0 z-20">
-          <div className="flex items-center justify-between px-4 md:px-6 py-4">
+          <div className="flex items-center justify-between px-4 !pl-18 md:px-6! py-4">
             <div>
               <h1 className="text-2xl font-semibold text-gray-900">{currentPage}</h1>
               <p className="text-sm text-gray-500 mt-0.5">
@@ -333,11 +334,14 @@ function SidebarContent({
       {/* Logo */}
       <div className="p-6 border-b">
         <Link href="/" className="flex items-center space-x-2">
-          <div className="bg-red-600 p-2 rounded-lg">
-            <Droplet className="h-6 w-6 text-white" />
-          </div>
-          <span className="font-bold text-xl">BloodDonation</span>
-        </Link>
+          <Image
+            src="/logo-new.png"
+            alt="BloodDonation Logo"
+            width={200}
+            height={32}
+            className="h-10 w-auto object-contain"
+          />        
+          </Link>
       </div>
 
       {/* User Info */}
@@ -370,7 +374,7 @@ function SidebarContent({
                   if (onNavigate) onNavigate();
                   router.push(item.href);
                 }}
-                className={`w-full flex items-center px-4 py-3 rounded-lg transition-colors ${isActive
+                className={`w-full flex items-center cursor-pointer px-4 py-3 rounded-lg transition-colors ${isActive
                   ? 'bg-red-50 text-red-600'
                   : 'text-gray-700 hover:bg-gray-100'
                   }`}
@@ -387,7 +391,7 @@ function SidebarContent({
       <div className="p-4 border-t">
         <button
           onClick={logout}
-          className="w-full flex items-center px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+          className="w-full flex items-center px-4 py-3 cursor-pointer rounded-lg text-red-600 hover:bg-red-50 transition-colors"
         >
           <LogOut className="mr-3 h-5 w-5" />
           <span className="font-medium">Logout</span>

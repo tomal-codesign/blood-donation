@@ -1,6 +1,7 @@
 // components/shared/Footer.tsx (SVG version)
 import Link from 'next/link';
-import { Droplet, Heart, Mail, Phone, MapPin } from 'lucide-react';
+import { Heart, Mail, Phone, MapPin } from 'lucide-react';
+import Image from 'next/image';
 
 export default function Footer() {
   return (
@@ -10,9 +11,13 @@ export default function Footer() {
           {/* Brand Section */}
           <div>
             <div className="flex items-center space-x-2 mb-4">
-              <Droplet className="h-8 w-8 text-red-500" />
-              <span className="font-bold text-xl">BloodDonation</span>
-            </div>
+              <Image
+                src="/logo-new.png"
+                alt="BloodDonation Logo"
+                width={200}
+                height={32}
+                className="h-10 w-auto object-contain"
+              />            </div>
             <p className="text-gray-400 text-sm">
               Saving lives through smart blood donation system. AI-powered matching for emergency responses.
             </p>
@@ -128,7 +133,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-400 text-sm">
-            &copy; {new Date().getFullYear()} BloodDonation. All rights reserved.
+            &copy; {new Date().getFullYear()} PluseCoder. All rights reserved.
           </p>
           <p className="text-gray-500 text-xs mt-2">
             Made with ❤️ for saving lives
