@@ -2,6 +2,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Menu, X, Heart, User, LogOut } from 'lucide-react';
@@ -11,6 +12,7 @@ import { toast } from 'sonner';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -38,6 +40,31 @@ export default function Navbar() {
       case 'admin': return '/dashboard/admin';
       default: return '/dashboard/patient';
     }
+  };
+
+  // Navigation items with their paths
+  const navItems = [
+    { name: 'Home', href: '/', exact: true, altPaths: ['/home'] }, // Added altPaths for /home
+    { name: 'Find Donor', href: '/find-donor', exact: false },
+    { name: 'Emergency', href: '/emergency', exact: false },
+    { name: 'About', href: '/about', exact: false },
+    { name: 'Contact', href: '/contact', exact: false },
+  ];
+
+  // Check if link is active with support for alternative paths
+  const isActiveLink = (item: typeof navItems[0]) => {
+    if (!pathname) return false;
+
+    // For Home page: check both '/' and '/home'
+    if (item.href === '/') {
+      return pathname === '/' || pathname === '/home';
+    }
+
+    if (item.exact) {
+      return pathname === item.href;
+    }
+
+    return pathname.startsWith(item.href);
   };
 
   // Don't render until mounted to avoid hydration mismatch
@@ -81,11 +108,15 @@ export default function Navbar() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex space-x-1">
-            <NavLink href="/">Home</NavLink>
-            <NavLink href="/find-donor">Find Donor</NavLink>
-            <NavLink href="/emergency">Emergency</NavLink>
-            <NavLink href="/about">About</NavLink>
-            <NavLink href="/contact">Contact</NavLink>
+            {navItems.map((item) => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                isActive={isActiveLink(item)}
+              >
+                {item.name}
+              </NavLink>
+            ))}
           </div>
 
           {/* Desktop Auth Buttons */}
@@ -132,11 +163,16 @@ export default function Navbar() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col space-y-3">
-              <MobileNavLink href="/" onClick={() => setIsMenuOpen(false)}>Home</MobileNavLink>
-              <MobileNavLink href="/find-donor" onClick={() => setIsMenuOpen(false)}>Find Donor</MobileNavLink>
-              <MobileNavLink href="/emergency" onClick={() => setIsMenuOpen(false)}>Emergency</MobileNavLink>
-              <MobileNavLink href="/about" onClick={() => setIsMenuOpen(false)}>About</MobileNavLink>
-              <MobileNavLink href="/contact" onClick={() => setIsMenuOpen(false)}>Contact</MobileNavLink>
+              {navItems.map((item) => (
+                <MobileNavLink
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setIsMenuOpen(false)}
+                  isActive={isActiveLink(item)}
+                >
+                  {item.name}
+                </MobileNavLink>
+              ))}
 
               {user ? (
                 <>
@@ -155,7 +191,9 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <MobileNavLink href="/login" onClick={() => setIsMenuOpen(false)}>Login</MobileNavLink>
+                  <MobileNavLink href="/login" onClick={() => setIsMenuOpen(false)}>
+                    Login
+                  </MobileNavLink>
                   <MobileNavLink href="/register" onClick={() => setIsMenuOpen(false)} isRegister>
                     Register
                   </MobileNavLink>
@@ -169,38 +207,56 @@ export default function Navbar() {
   );
 }
 
-// Helper components
-function NavLink({ href, children, isEmergency }: { href: string; children: React.ReactNode; isEmergency?: boolean }) {
+// NavLink component - all links have same behavior
+function NavLink({
+  href,
+  children,
+  isActive
+}: {
+  href: string;
+  children: React.ReactNode;
+  isActive: boolean;
+}) {
+  // Check if it's emergency link to show heart icon
+
   return (
     <Link
       href={href}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isEmergency
-        ? 'bg-red-600 text-white hover:bg-red-700'
-        : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
+      className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+          ? 'bg-red-50 text-red-600' // Active state for all links including emergency
+          : 'text-gray-700 hover:text-red-600 hover:bg-red-50'
         }`}
     >
-      {isEmergency && <Heart className="h-4 w-4 inline mr-1" />}
       {children}
     </Link>
   );
 }
 
-function MobileNavLink({ href, children, onClick, isEmergency, isRegister }: {
+// MobileNavLink component - all links have same behavior
+function MobileNavLink({
+  href,
+  children,
+  onClick,
+  isActive,
+  isRegister
+}: {
   href: string;
   children: React.ReactNode;
   onClick: () => void;
-  isEmergency?: boolean;
+  isActive?: boolean;
   isRegister?: boolean;
 }) {
+  // Check if it's emergency link
+
   return (
     <Link
       href={href}
       onClick={onClick}
-      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${isEmergency
-        ? 'bg-red-600 text-white'
-        : isRegister
-          ? 'bg-red-600 text-white'
-          : 'text-gray-700 hover:bg-red-50'
+      className={`px-4 py-2 rounded-lg text-sm font-medium transition ${isRegister
+          ? 'bg-red-600 text-white' // Register button special style
+          : isActive
+            ? 'bg-red-50 text-red-600' // Active state for all links including emergency
+            : 'text-gray-700 hover:bg-red-50'
         }`}
     >
       {children}
