@@ -34,9 +34,35 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 
+// Type definitions
+interface User {
+  id: string;
+  email: string;
+  role: 'donor' | 'patient' | 'hospital' | 'admin';
+  full_name: string;
+  phone: string;
+  city: string;
+  blood_group?: string;
+  location_lat?: number;
+  location_lng?: number;
+}
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+}
+
+interface RoleConfig {
+  icon: any;
+  gradient: string;
+  badgeColor: string;
+  items: NavItem[];
+}
+
 // Auth hook with role check
 const useAuth = () => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,9 +99,9 @@ const useAuth = () => {
   return { user, loading, logout };
 };
 
-// Role-based navigation items
-const getNavItems = (role: string) => {
-  const roleConfig: Record<string, any> = {
+// Role-based navigation items with proper typing
+const getNavItems = (role: string): RoleConfig => {
+  const roleConfigs: Record<string, RoleConfig> = {
     donor: {
       icon: Heart,
       gradient: 'from-red-600 to-red-500',
@@ -134,7 +160,7 @@ const getNavItems = (role: string) => {
     }
   };
 
-  return roleConfig[role] || roleConfig.donor;
+  return roleConfigs[role] || roleConfigs.donor;
 };
 
 const getInitials = (name: string | undefined | null): string => {
@@ -181,7 +207,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const roleConfig = getNavItems(user.role);
   const navItems = roleConfig.items;
-  const currentPage = navItems.find(item => item.href === pathname)?.name || 'Dashboard';
+  // Fixed: Added proper type for the find callback parameter
+  const currentPage = navItems.find((item: NavItem) => item.href === pathname)?.name || 'Dashboard';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -310,8 +337,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   );
 }
 
-// Sidebar Component
-function SidebarContent({ user, navItems, pathname, roleConfig, onNavigate, getInitials, logout }: any) {
+// Sidebar Component with proper typing
+interface SidebarContentProps {
+  user: User;
+  navItems: NavItem[];
+  pathname: string;
+  roleConfig: RoleConfig;
+  onNavigate?: () => void;
+  getInitials: (name: string) => string;
+  logout: () => void;
+}
+
+function SidebarContent({ 
+  user, 
+  navItems, 
+  pathname, 
+  roleConfig, 
+  onNavigate, 
+  getInitials, 
+  logout 
+}: SidebarContentProps) {
   const router = useRouter();
 
   return (
@@ -345,7 +390,7 @@ function SidebarContent({ user, navItems, pathname, roleConfig, onNavigate, getI
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="space-y-1">
-          {navItems.map((item: any) => {
+          {navItems.map((item: NavItem) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
 
