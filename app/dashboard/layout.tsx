@@ -63,6 +63,7 @@ const getNavItems = (role: string): RoleConfig => {
         { name: 'Find Requests', href: '/dashboard/donor/requests', icon: Search },
         { name: 'Emergency Alerts', href: '/dashboard/donor/alerts', icon: Bell },
         { name: 'My Profile', href: '/dashboard/donor/profile', icon: User },
+        { name: 'Settings', href: '/dashboard/donor/settings', icon: Settings },
       ]
     },
     hospital: {
