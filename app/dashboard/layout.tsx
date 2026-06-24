@@ -76,7 +76,6 @@ const getNavItems = (role: string): RoleConfig => {
         { name: 'Blood Requests', href: '/dashboard/hospital/requests', icon: FileText },
         { name: 'Donor List', href: '/dashboard/hospital/donors', icon: Users },
         { name: 'Analytics', href: '/dashboard/hospital/analytics', icon: TrendingUp },
-        { name: 'Stock Alerts', href: '/dashboard/hospital/alerts', icon: AlertTriangle },
         { name: 'Profile', href: '/dashboard/hospital/profile', icon: User },
       ]
     },

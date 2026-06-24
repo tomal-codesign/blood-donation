@@ -8,21 +8,18 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Droplet, 
-  Heart, 
   Calendar, 
   Clock, 
   MapPin, 
-  Bell, 
-  Activity,
+  Bell,
+  Loader2,
   CheckCircle,
-  AlertCircle,
-  TrendingUp,
-  Gift,
-  Shield,
   X,
-  Award
+  Gift,
+  Hospital
 } from 'lucide-react';
 import { toast } from 'sonner';
+import Link from 'next/link';
 
 interface Donation {
   id: number;
@@ -31,7 +28,7 @@ interface Donation {
   date: string;
   time: string;
   location: string;
-  status: 'upcoming' | 'scheduled' | 'completed' | 'cancelled';
+  status: 'upcoming' | 'scheduled' | 'completed';
   contact_person?: string;
   contact_number?: string;
 }
@@ -40,7 +37,6 @@ export default function MyDonationsPage() {
   const { user, token } = useAuth();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDonation, setSelectedDonation] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   useEffect(() => {
@@ -49,85 +45,65 @@ export default function MyDonationsPage() {
 
   const fetchDonations = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/donors/${user?.id}/upcoming-donations`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/donors/upcoming?user_id=${user?.id}`,
+        {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }
+      );
+
       if (response.ok) {
         const data = await response.json();
         setDonations(data.donations || []);
       } else {
-        setDonations(getMockDonations());
+        // Fallback mock data
+        setDonations([
+          {
+            id: 1,
+            blood_group: 'O+',
+            hospital: 'Dhaka Medical Hospital',
+            date: '2024-07-15',
+            time: '10:00 AM',
+            location: 'Blood Bank, 2nd Floor',
+            status: 'upcoming',
+            contact_person: 'Dr. Rahman',
+            contact_number: '01712345678'
+          },
+          {
+            id: 2,
+            blood_group: 'O+',
+            hospital: 'Square Hospital',
+            date: '2024-07-25',
+            time: '02:30 PM',
+            location: 'Donation Center, Ground Floor',
+            status: 'scheduled',
+            contact_person: 'Nurse Fatema',
+            contact_number: '01987654321'
+          }
+        ]);
       }
     } catch (error) {
-      console.error('Error:', error);
-      setDonations(getMockDonations());
+      console.error('Error fetching donations:', error);
+      toast.error('Failed to load donations');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const getMockDonations = (): Donation[] => {
-    return [
-      { 
-        id: 1, 
-        blood_group: 'O+', 
-        hospital: 'Dhaka Medical Hospital', 
-        date: '2024-06-20', 
-        time: '10:00 AM',
-        location: 'Blood Bank, 2nd Floor, Room 201',
-        status: 'upcoming',
-        contact_person: 'Dr. Rahman',
-        contact_number: '01712345678'
-      },
-      { 
-        id: 2, 
-        blood_group: 'O+', 
-        hospital: 'Square Hospital', 
-        date: '2024-06-25', 
-        time: '02:30 PM',
-        location: 'Donation Center, Ground Floor',
-        status: 'scheduled',
-        contact_person: 'Nurse Fatema',
-        contact_number: '01987654321'
-      }
-    ];
-  };
-
-  const markAsDonated = async (id: number) => {
-    setActionLoading(id);
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/donors/${id}/mark-donated`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        toast.success('Thank you for your donation! You saved a life today! 🎉');
-        setDonations(donations.filter(d => d.id !== id));
-      } else {
-        toast.error('Failed to mark as donated');
-      }
-    } catch (error) {
-      toast.error('Network error');
-    } finally {
-      setActionLoading(null);
     }
   };
 
   const cancelDonation = async (id: number) => {
     setActionLoading(id);
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/donors/${id}/cancel-donation`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+      // API call to cancel donation
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/donors/cancel/${id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
         }
-      });
+      );
 
       if (response.ok) {
         toast.success('Donation cancelled successfully');
@@ -142,50 +118,14 @@ export default function MyDonationsPage() {
     }
   };
 
-  const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'upcoming':
-        return { 
-          icon: <Clock className="h-3.5 w-3.5" />, 
-          label: 'Upcoming', 
-          color: 'bg-blue-500',
-          bgColor: 'bg-blue-50',
-          textColor: 'text-blue-700'
-        };
-      case 'scheduled':
-        return { 
-          icon: <Calendar className="h-3.5 w-3.5" />, 
-          label: 'Scheduled', 
-          color: 'bg-green-500',
-          bgColor: 'bg-green-50',
-          textColor: 'text-green-700'
-        };
-      case 'completed':
-        return { 
-          icon: <Award className="h-3.5 w-3.5" />, 
-          label: 'Completed', 
-          color: 'bg-purple-500',
-          bgColor: 'bg-purple-50',
-          textColor: 'text-purple-700'
-        };
-      default:
-        return { 
-          icon: <AlertCircle className="h-3.5 w-3.5" />, 
-          label: 'Pending', 
-          color: 'bg-yellow-500',
-          bgColor: 'bg-yellow-50',
-          textColor: 'text-yellow-700'
-        };
-    }
+  const confirmDonation = async (id: number) => {
+    toast.success('Thank you for confirming! See you at the hospital.');
   };
-
-  const nextDonation = donations[0];
-  const daysUntilNext = nextDonation ? Math.ceil((new Date(nextDonation.date).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 0;
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <Loader2 className="h-12 w-12 animate-spin text-red-600" />
       </div>
     );
   }
@@ -193,44 +133,39 @@ export default function MyDonationsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">My Donations</h1>
-        <p className="text-gray-500 mt-1">Manage your upcoming and scheduled donations</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">My Donations</h1>
+          <p className="text-gray-500 mt-1">Manage your upcoming and scheduled donations</p>
+        </div>
+        <Badge className="bg-red-100 text-red-700 px-3 py-1">
+          {donations.length} Upcoming
+        </Badge>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Next Donation</p>
-                <p className="text-2xl font-bold">{daysUntilNext > 0 ? `In ${daysUntilNext} days` : 'Today'}</p>
-              </div>
-              <Calendar className="h-8 w-8 opacity-75" />
-            </div>
+          <CardContent className="p-4 text-center">
+            <Calendar className="h-6 w-6 mx-auto mb-2 opacity-75" />
+            <p className="text-2xl font-bold">{donations.length}</p>
+            <p className="text-sm opacity-75">Total Donations</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Total Scheduled</p>
-                <p className="text-2xl font-bold">{donations.length}</p>
-              </div>
-              <Activity className="h-8 w-8 opacity-75" />
-            </div>
+          <CardContent className="p-4 text-center">
+            <Clock className="h-6 w-6 mx-auto mb-2 opacity-75" />
+            <p className="text-2xl font-bold">
+              {donations.filter(d => d.status === 'upcoming').length}
+            </p>
+            <p className="text-sm opacity-75">Upcoming</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm opacity-90">Eligibility</p>
-                <p className="text-2xl font-bold">Ready</p>
-              </div>
-              <Shield className="h-8 w-8 opacity-75" />
-            </div>
+          <CardContent className="p-4 text-center">
+            <CheckCircle className="h-6 w-6 mx-auto mb-2 opacity-75" />
+            <p className="text-2xl font-bold">Ready</p>
+            <p className="text-sm opacity-75">You Can Donate</p>
           </CardContent>
         </Card>
       </div>
@@ -239,10 +174,8 @@ export default function MyDonationsPage() {
       {donations.length === 0 ? (
         <Card>
           <CardContent className="text-center py-16">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Gift className="h-10 w-10 text-gray-400" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-1">No Upcoming Donations</h3>
+            <Gift className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">No Upcoming Donations</h3>
             <p className="text-gray-500 text-sm mb-4">You haven't scheduled any donations yet</p>
             <Button className="bg-red-600 hover:bg-red-700">
               Schedule a Donation
@@ -251,178 +184,105 @@ export default function MyDonationsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {donations.map((donation) => {
-            const statusConfig = getStatusConfig(donation.status);
-            const isExpanded = selectedDonation === donation.id;
-            const isLoading = actionLoading === donation.id;
-            
-            return (
-              <Card key={donation.id} className="overflow-hidden">
-                {/* Progress Bar for upcoming */}
-                {donation.status === 'upcoming' && (
-                  <div className="h-1 bg-gray-100">
-                    <div className="h-full w-2/3 bg-red-500"></div>
-                  </div>
-                )}
-                
-                <CardContent className="p-0">
-                  <div className="p-5">
-                    {/* Header Section */}
-                    <div className="flex items-start justify-between flex-wrap gap-3 mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
-                          <Droplet className="h-6 w-6 text-red-600" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl font-bold text-gray-900">{donation.blood_group}</span>
-                            <Badge className={`${statusConfig.bgColor} ${statusConfig.textColor} border-none`}>
-                              {statusConfig.icon}
-                              <span className="ml-1">{statusConfig.label}</span>
-                            </Badge>
-                          </div>
-                          <p className="font-medium text-gray-800">{donation.hospital}</p>
-                        </div>
+          {donations.map((donation) => (
+            <Card key={donation.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Status Bar */}
+              <div className={`h-1 ${donation.status === 'upcoming' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+              
+              <CardContent className="p-5">
+                <div className="flex items-start justify-between flex-wrap gap-4">
+                  {/* Left Section */}
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                      <Droplet className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-xl font-bold text-gray-900">
+                          Blood {donation.blood_group}
+                        </span>
+                        <Badge className={donation.status === 'upcoming' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}>
+                          {donation.status === 'upcoming' ? 'Upcoming' : 'Scheduled'}
+                        </Badge>
                       </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm"
-                          onClick={() => markAsDonated(donation.id)}
-                          disabled={isLoading}
-                          className="bg-green-600 hover:bg-green-700 text-white"
-                        >
-                          {isLoading ? (
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          ) : (
-                            <>
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Successfully Donated
-                            </>
-                          )}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => cancelDonation(donation.id)}
-                          disabled={isLoading}
-                          className="border-red-500 text-red-600 hover:bg-red-50"
-                        >
+                      <p className="font-medium text-gray-800">{donation.hospital}</p>
+                      <div className="flex flex-wrap items-center gap-3 mt-2 text-sm text-gray-500">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {donation.date}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          {donation.time}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {donation.location}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => confirmDonation(donation.id)}
+                      className="border-green-500 text-green-600 hover:bg-green-50"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Confirm
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => cancelDonation(donation.id)}
+                      disabled={actionLoading === donation.id}
+                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      {actionLoading === donation.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
                           <X className="h-4 w-4 mr-1" />
                           Cancel
-                        </Button>
-                      </div>
-                    </div>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
 
-                    {/* Date & Time Info */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 py-3 border-y border-gray-100 mb-3">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="text-xs text-gray-500">Date</p>
-                          <p className="font-medium text-gray-800">{donation.date}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="text-xs text-gray-500">Time</p>
-                          <p className="font-medium text-gray-800">{donation.time}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="text-xs text-gray-500">Location</p>
-                          <p className="font-medium text-gray-800 truncate">{donation.location}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Heart className="h-4 w-4 text-gray-400" />
-                        <div>
-                          <p className="text-xs text-gray-500">Status</p>
-                          <p className="font-medium text-green-600 capitalize">{donation.status}</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expandable Section */}
-                    <div className="flex justify-between items-center">
-                      <button 
-                        onClick={() => setSelectedDonation(isExpanded ? null : donation.id)}
-                        className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-                      >
-                        {isExpanded ? 'Show less' : 'Show more details'}
-                        <svg className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
-                        <Bell className="h-3 w-3" />
-                        <span>Reminder will be sent 1 day before</span>
-                      </div>
-                    </div>
-
-                    {/* Expanded Content */}
-                    {isExpanded && (
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
-                        <h4 className="font-semibold text-gray-800 mb-2">Donation Instructions</h4>
-                        <ul className="space-y-2 text-sm text-gray-600">
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                            <span>Get at least 7-8 hours of sleep before donation</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                            <span>Eat a healthy meal 2-3 hours before donation</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                            <span>Drink plenty of water before donation</span>
-                          </li>
-                          <li className="flex items-start gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                            <span>Bring your ID card and donor card</span>
-                          </li>
-                        </ul>
-                        
-                        {donation.contact_person && (
-                          <div className="mt-3 pt-3 border-t border-gray-200">
-                            <p className="text-sm text-gray-600">
-                              <span className="font-medium">Contact Person:</span> {donation.contact_person}
-                              {donation.contact_number && ` (${donation.contact_number})`}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                {/* Contact Info */}
+                {donation.contact_person && (
+                  <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-4 text-sm">
+                    <span className="text-gray-500">
+                      <span className="font-medium">Contact:</span> {donation.contact_person}
+                    </span>
+                    {donation.contact_number && (
+                      <span className="text-gray-500">
+                        <span className="font-medium">Phone:</span> {donation.contact_number}
+                      </span>
                     )}
                   </div>
-
-                  {/* Reminder Banner */}
-                  {donation.status === 'upcoming' && (
-                    <div className="bg-blue-50 px-5 py-2 flex items-center gap-2 text-sm text-blue-700">
-                      <Bell className="h-4 w-4" />
-                      <span>Donation is scheduled in {daysUntilNext} days. Please prepare accordingly.</span>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                )}
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
-      {/* Donation Tips */}
+      {/* Health Tips */}
       <Card className="bg-amber-50 border-amber-100">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
-              <TrendingUp className="h-4 w-4 text-amber-600" />
+              <Hospital className="h-4 w-4 text-amber-600" />
             </div>
             <div>
-              <h4 className="font-semibold text-amber-800 text-sm">Health Tips</h4>
+              <h4 className="font-semibold text-amber-800 text-sm">Before Donation Tips</h4>
               <p className="text-xs text-amber-700 mt-1">
-                Maintain a healthy iron-rich diet. Avoid alcohol 24 hours before donation. 
-                Inform the medical staff if you have any medical conditions.
+                • Get 7-8 hours of sleep • Eat a healthy meal • Drink plenty of water • Bring your ID card
               </p>
             </div>
           </div>

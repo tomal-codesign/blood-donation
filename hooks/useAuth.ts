@@ -10,8 +10,14 @@ export interface User {
   phone: string;
   city: string;
   blood_group?: string;
+  is_available?: boolean;
+  total_donations?: number;
+  last_donation_date?: string;
   location_lat?: number;
   location_lng?: number;
+  address?: string;
+  registration_number?: string;
+  blood_bank_license?: string;
 }
 
 interface AuthState {
@@ -23,37 +29,56 @@ interface AuthState {
   setLoading: (isLoading: boolean) => void;
   logout: () => void;
   login: (token: string, user: User) => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
-export const useAuth = create<AuthState>()((set) => ({
-  user: null,
-  token: null,
-  isLoading: true,
-  setUser: (user) => set({ user }),
-  setToken: (token) => set({ token }),
-  setLoading: (isLoading) => set({ isLoading }),
-  logout: () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    set({ user: null, token: null, isLoading: false });
-  },
-  login: (token: string, user: User) => {
-    // Validate user has role
-    if (!user.role) {
-      console.error("Login: User role is missing!", user);
-      user.role = "donor"; // Default fallback
-    }
-    localStorage.setItem("token", token);
-    localStorage.setItem("user", JSON.stringify(user));
-    set({ token, user, isLoading: false });
+export const useAuth = create<AuthState>()(
+  persist(
+    (set) => ({
+      user: null,
+      token: null,
+      isLoading: true,
+      setUser: (user) => set({ user }),
+      setToken: (token) => set({ token }),
+      setLoading: (isLoading) => set({ isLoading }),
 
-    // Force a small delay to ensure state is updated
-    setTimeout(() => {
-      const storedUser = localStorage.getItem("user");
-      console.log("Verified stored user:", JSON.parse(storedUser || "{}"));
-    }, 100);
-  },
-}));
+      logout: () => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        set({ user: null, token: null, isLoading: false });
+      },
+
+      login: (token: string, user: User) => {
+        // Validate user has role
+        if (!user.role) {
+          console.error("Login: User role is missing!", user);
+          user.role = "donor";
+        }
+        localStorage.setItem("token", token);
+        localStorage.setItem("user", JSON.stringify(user));
+        set({ token, user, isLoading: false });
+
+        console.log("✅ User logged in:", user.email, "Role:", user.role);
+      },
+
+      updateUser: (userData: Partial<User>) => {
+        set((state) => {
+          if (!state.user) return state;
+          const updatedUser = { ...state.user, ...userData };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          return { user: updatedUser };
+        });
+      },
+    }),
+    {
+      name: "auth-storage",
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      }),
+    }
+  )
+);
 
 // Initialize auth state from localStorage on app load
 if (typeof window !== "undefined") {
@@ -62,19 +87,19 @@ if (typeof window !== "undefined") {
   if (token && userData) {
     try {
       const user = JSON.parse(userData);
-      // Ensure user has role
       if (!user.role) {
-        console.error("Stored user missing role:", user);
-        user.role = "donor"; // Default fallback
-        // Update localStorage with fixed user
+        console.warn("Stored user missing role, setting default:", user);
+        user.role = "donor";
         localStorage.setItem("user", JSON.stringify(user));
       }
-      console.log("Initialized user:", user);
+      console.log("✅ Auth initialized for:", user.email, "Role:", user.role);
       useAuth.getState().setToken(token);
       useAuth.getState().setUser(user);
       useAuth.getState().setLoading(false);
     } catch (error) {
-      console.error("Error parsing user data:", error);
+      console.error("❌ Error parsing user data:", error);
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
       useAuth.getState().setLoading(false);
     }
   } else {

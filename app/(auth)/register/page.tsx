@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Droplet } from 'lucide-react';
+import { Droplet, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function RegisterPage() {
@@ -35,7 +35,7 @@ export default function RegisterPage() {
   }, [user, router]);
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-  const cities = ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barishal', 'Rangpur'];
+  const cities = ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barishal', 'Rangpur', 'Mymensingh'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +60,11 @@ export default function RegisterPage() {
         toast.success('Registration successful! Please login.');
         router.push('/login');
       } else {
-        toast.error(data.message || data.error || 'Registration failed');
+        toast.error(data.error || data.message || 'Registration failed');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Something went wrong');
+      toast.error('Network error. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -72,65 +72,78 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 py-8">
-      <Card className="w-full max-w-lg">
+      <Card className="w-full max-w-lg shadow-2xl border-0">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <Droplet className="h-12 w-12 text-red-600" />
+            <div className="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-full shadow-lg">
+              <Droplet className="h-8 w-8 text-white" />
+            </div>
           </div>
-          <CardTitle className="text-2xl">Create Account</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-3xl font-bold text-gray-900">Create Account</CardTitle>
+          <CardDescription className="text-gray-500">
             Join as a donor, patient, or hospital
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Role Selection */}
             <div>
-              <Label>Register as</Label>
+              <Label className="text-sm font-semibold">Register as</Label>
               <Select onValueChange={setRole} defaultValue="donor">
-                <SelectTrigger>
+                <SelectTrigger className="mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="donor">Blood Donor</SelectItem>
-                  <SelectItem value="patient">Patient/Recipient</SelectItem>
-                  <SelectItem value="hospital">Hospital/Blood Bank</SelectItem>
+                  <SelectItem value="donor">🩸 Blood Donor</SelectItem>
+                  <SelectItem value="patient">🏥 Patient/Recipient</SelectItem>
+                  <SelectItem value="hospital">🏨 Hospital/Blood Bank</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
+            {/* Full Name */}
             <div>
-              <Label>Full Name</Label>
+              <Label className="text-sm font-semibold">Full Name</Label>
               <Input
                 required
+                placeholder="John Doe"
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                className="mt-1"
               />
             </div>
 
+            {/* Email */}
             <div>
-              <Label>Email</Label>
+              <Label className="text-sm font-semibold">Email</Label>
               <Input
                 type="email"
                 required
+                placeholder="john@example.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="mt-1"
               />
             </div>
 
+            {/* Phone */}
             <div>
-              <Label>Phone</Label>
+              <Label className="text-sm font-semibold">Phone Number</Label>
               <Input
                 required
+                placeholder="017XXXXXXXX"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="mt-1"
               />
             </div>
 
+            {/* City */}
             <div>
-              <Label>City</Label>
+              <Label className="text-sm font-semibold">City</Label>
               <Select onValueChange={(value) => setFormData({ ...formData, city: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select city" />
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select your city" />
                 </SelectTrigger>
                 <SelectContent>
                   {cities.map(city => (
@@ -140,11 +153,12 @@ export default function RegisterPage() {
               </Select>
             </div>
 
+            {/* Blood Group (for donors) */}
             {role === 'donor' && (
               <div>
-                <Label>Blood Group</Label>
+                <Label className="text-sm font-semibold">Blood Group</Label>
                 <Select onValueChange={(value) => setFormData({ ...formData, blood_group: value })}>
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-1">
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -156,24 +170,39 @@ export default function RegisterPage() {
               </div>
             )}
 
+            {/* Password */}
             <div>
-              <Label>Password</Label>
+              <Label className="text-sm font-semibold">Password</Label>
               <Input
                 type="password"
                 required
+                placeholder="••••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                className="mt-1"
               />
+              <p className="text-xs text-gray-400 mt-1">Password must be at least 6 characters</p>
             </div>
 
-            <Button type="submit" className="w-full bg-red-600 hover:bg-red-700" disabled={loading}>
-              {loading ? "Creating account..." : "Register"}
+            <Button 
+              type="submit" 
+              className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white font-semibold py-6"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Register'
+              )}
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm">
-            Already have an account?{" "}
-            <Link href="/login" className="text-red-600 hover:underline">
+          <div className="mt-6 text-center text-sm">
+            <span className="text-gray-500">Already have an account?</span>{' '}
+            <Link href="/login" className="text-red-600 hover:text-red-700 font-semibold hover:underline">
               Login here
             </Link>
           </div>
