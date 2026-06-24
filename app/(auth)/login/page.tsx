@@ -44,7 +44,7 @@ export default function LoginPage() {
 
       if (response.ok) {
         console.log('Login response:', data);
-        
+
         // Ensure user object has role
         if (!data.user || !data.user.role) {
           toast.error('Invalid user data received from server');
@@ -68,11 +68,11 @@ export default function LoginPage() {
         // Use a slightly longer delay to ensure Zustand state is updated
         const role = data.user.role;
         console.log('Navigating to dashboard:', role);
-        
+
         setTimeout(() => {
           router.push(`/dashboard/${role}`);
         }, 500);
-        
+
       } else {
         toast.error(data.error || data.message || 'Login failed');
       }
