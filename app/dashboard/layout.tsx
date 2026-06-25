@@ -4,7 +4,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   LayoutDashboard,
   Droplet,
@@ -16,125 +15,46 @@ import {
   Settings,
   LogOut,
   Menu,
+  X,
   Bell,
   User,
-  ChevronDown,
   Activity,
   Package,
   FileText,
   TrendingUp,
   Shield,
-  Search,
+  BarChart3,
+  PlusCircle,
   AlertTriangle,
-  Plus,
+  Building2,
+  Database,
   Clock,
-  Download,
-  Gift,
+  CheckCircle,
+  XCircle,
+  ListChecks,
+  Search,
+  History
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
-import { useAuth, User as AuthUser } from '@/hooks/useAuth';
+import { useAuth } from '@/hooks/useAuth';
 
-// Type definitions
-interface NavItem {
-  name: string;
-  href: string;
-  icon: any;
-}
-
-interface RoleConfig {
-  icon: any;
-  gradient: string;
-  badgeColor: string;
-  items: NavItem[];
-}
-
-// Role-based navigation items
-const getNavItems = (role: string): RoleConfig => {
-  const roleConfigs: Record<string, RoleConfig> = {
-    donor: {
-      icon: Heart,
-      gradient: 'from-red-600 to-red-500',
-      badgeColor: 'bg-red-100 text-red-800',
-      items: [
-        { name: 'Dashboard', href: '/dashboard/donor', icon: LayoutDashboard },
-        { name: 'My Donations', href: '/dashboard/donor/donations', icon: Gift },
-        { name: 'Donation History', href: '/dashboard/donor/history', icon: Calendar },
-        { name: 'Find Requests', href: '/dashboard/donor/requests', icon: Search },
-        { name: 'Emergency Alerts', href: '/dashboard/donor/alerts', icon: Bell },
-        { name: 'My Profile', href: '/dashboard/donor/profile', icon: User },
-        { name: 'Settings', href: '/dashboard/donor/settings', icon: Settings },
-      ]
-    },
-    hospital: {
-      icon: Hospital,
-      gradient: 'from-blue-600 to-blue-500',
-      badgeColor: 'bg-blue-100 text-blue-800',
-      items: [
-        { name: 'Dashboard', href: '/dashboard/hospital', icon: LayoutDashboard },
-        { name: 'Blood Inventory', href: '/dashboard/hospital/inventory', icon: Package },
-        { name: 'Blood Requests', href: '/dashboard/hospital/requests', icon: FileText },
-        { name: 'Donor List', href: '/dashboard/hospital/donors', icon: Users },
-        { name: 'Analytics', href: '/dashboard/hospital/analytics', icon: TrendingUp },
-        { name: 'Profile', href: '/dashboard/hospital/profile', icon: User },
-      ]
-    },
-    admin: {
-      icon: Shield,
-      gradient: 'from-purple-600 to-purple-500',
-      badgeColor: 'bg-purple-100 text-purple-800',
-      items: [
-        { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
-        { name: 'User Management', href: '/dashboard/admin/users', icon: Users },
-        { name: 'Hospital Management', href: '/dashboard/admin/hospitals', icon: Hospital },
-        { name: 'Blood Banks', href: '/dashboard/admin/blood-banks', icon: Droplet },
-        { name: 'Blood Requests', href: '/dashboard/admin/requests', icon: FileText },
-        { name: 'System Analytics', href: '/dashboard/admin/analytics', icon: Activity },
-        { name: 'AI Monitoring', href: '/dashboard/admin/ai-monitor', icon: Shield },
-        { name: 'Reports', href: '/dashboard/admin/reports', icon: Download },
-        { name: 'Settings', href: '/dashboard/admin/settings', icon: Settings },
-      ]
-    },
-    patient: {
-      icon: User,
-      gradient: 'from-green-600 to-green-500',
-      badgeColor: 'bg-green-100 text-green-800',
-      items: [
-        { name: 'Dashboard', href: '/dashboard/patient', icon: LayoutDashboard },
-        { name: 'My Requests', href: '/dashboard/patient/requests', icon: FileText },
-        { name: 'New Request', href: '/dashboard/patient/new-request', icon: Plus },
-        { name: 'Emergency Request', href: '/dashboard/patient/emergency', icon: AlertTriangle },
-        { name: 'Request History', href: '/dashboard/patient/history', icon: Clock },
-        { name: 'My Profile', href: '/dashboard/patient/profile', icon: User },
-      ]
-    }
-  };
-
-  return roleConfigs[role] || roleConfigs.donor;
-};
-
-const getInitials = (name: string | undefined | null): string => {
-  if (!name || typeof name !== 'string') return 'U';
-  return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
-};
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Debug log
   useEffect(() => {
-    console.log('Dashboard Layout - User:', user);
-    console.log('Dashboard Layout - Loading:', isLoading);
-    console.log('Dashboard Layout - Pathname:', pathname);
-  }, [user, isLoading, pathname]);
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!isLoading && !user) {
-      console.log('No user, redirecting to login');
       router.push('/login');
     }
   }, [user, isLoading, router]);
@@ -143,259 +63,176 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     if (user) {
       const pathRole = pathname?.split('/')[2];
-      console.log('Path role:', pathRole);
-      console.log('User role:', user.role);
-
-      // Check if user has role property
-      if (!user.role) {
-        console.error('User role is undefined!', user);
-        toast.error('User role not found. Please login again.');
-        logout();
-        router.push('/login');
-        return;
-      }
-
-      if (pathRole && pathRole !== user.role) {
-        console.log(`Access denied: ${pathRole} vs ${user.role}`);
+      if (pathRole && !user.roles?.includes(pathRole)) {
         toast.error(`Access denied. You are not authorized to access ${pathRole} dashboard.`);
-        router.push(`/dashboard/${user.role}`);
+        const defaultRole = user.currentRole || user.roles?.[0] || 'donor';
+        router.push(`/dashboard/${defaultRole}`);
       }
     }
-  }, [user, pathname, router, logout]);
+  }, [user, pathname, router]);
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 font-medium">Loading dashboard...</p>
+          <p className="mt-4 text-gray-600 font-medium">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (!user || !user.role) return null;
+  if (!user) return null;
 
-  const roleConfig = getNavItems(user.role);
-  const navItems = roleConfig.items;
-  const currentPage = navItems.find((item: NavItem) => item.href === pathname)?.name || 'Dashboard';
+  const currentRole = user.currentRole || user.roles?.[0] || 'donor';
+
+  // ========== DONOR-PATIENT COMBINED MENU ==========
+  const donorPatientNav = [
+    { name: 'Dashboard', href: `/dashboard/${currentRole}`, icon: LayoutDashboard },
+    { name: 'My Donations', href: '/dashboard/donor/donations', icon: Heart },
+    { name: 'Donation History', href: '/dashboard/donor/history', icon: History },
+    { name: 'My Requests', href: '/dashboard/patient/requests', icon: FileText },
+    { name: 'New Request', href: '/dashboard/patient/new-request', icon: PlusCircle },
+    { name: 'Find Requests', href: '/dashboard/donor/requests', icon: Search },
+    { name: 'Emergency Alerts', href: '/dashboard/donor/alerts', icon: AlertTriangle },
+    { name: 'Emergency Request', href: '/dashboard/patient/emergency', icon: Bell },
+    { name: 'Request Status', href: '/dashboard/patient/status', icon: ListChecks },
+    { name: 'Profile', href: `/dashboard/${currentRole}/profile`, icon: User },
+    { name: 'Settings', href: `/dashboard/${currentRole}/settings`, icon: Settings }
+  ];
+
+  // ========== HOSPITAL MENU ==========
+  const hospitalNav = [
+    { name: 'Dashboard', href: '/dashboard/hospital', icon: LayoutDashboard },
+    { name: 'Blood Inventory', href: '/dashboard/hospital/inventory', icon: Package },
+    { name: 'Stock Alerts', href: '/dashboard/hospital/alerts', icon: AlertTriangle },
+    { name: 'Add Stock', href: '/dashboard/hospital/add-stock', icon: PlusCircle },
+    { name: 'Blood Requests', href: '/dashboard/hospital/requests', icon: FileText },
+    { name: 'Pending Requests', href: '/dashboard/hospital/pending', icon: Clock },
+    { name: 'Approved Requests', href: '/dashboard/hospital/approved', icon: CheckCircle },
+    { name: 'Rejected Requests', href: '/dashboard/hospital/rejected', icon: XCircle },
+    { name: 'Donor List', href: '/dashboard/hospital/donors', icon: Users },
+    { name: 'Find Donors', href: '/dashboard/hospital/find-donors', icon: Search },
+    { name: 'Analytics', href: '/dashboard/hospital/analytics', icon: TrendingUp },
+    { name: 'Profile', href: '/dashboard/hospital/profile', icon: User },
+    { name: 'Settings', href: '/dashboard/hospital/settings', icon: Settings }
+  ];
+
+  // ========== ADMIN MENU ==========
+  const adminNav = [
+    { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
+    { name: 'User Management', href: '/dashboard/admin/users', icon: Users },
+    { name: 'Hospitals', href: '/dashboard/admin/hospitals', icon: Building2 },
+    { name: 'Blood Banks', href: '/dashboard/admin/blood-banks', icon: Droplet },
+    { name: 'Blood Requests', href: '/dashboard/admin/requests', icon: FileText },
+    { name: 'Analytics', href: '/dashboard/admin/analytics', icon: Activity },
+    { name: 'AI Monitoring', href: '/dashboard/admin/ai-monitor', icon: Shield },
+    { name: 'Reports', href: '/dashboard/admin/reports', icon: BarChart3 },
+    { name: 'Profile', href: '/dashboard/admin/profile', icon: User },
+    { name: 'Settings', href: '/dashboard/admin/settings', icon: Settings }
+  ];
+
+  // ========== MENU SELECTION BASED ON ROLE ==========
+  const getNavItems = () => {
+    switch (currentRole) {
+      case 'donor':
+      case 'patient':
+        return donorPatientNav;
+      case 'hospital':
+        return hospitalNav;
+      case 'admin':
+        return adminNav;
+      default:
+        return donorPatientNav;
+    }
+  };
+
+  const currentNav = getNavItems();
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile Sidebar Toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="bg-white shadow-lg"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-      </div>
+      {/* Sidebar */}
+      <aside className={`fixed top-0 left-0 z-30 w-64 h-full bg-white shadow-lg transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+        <div className="flex items-center justify-between p-4 border-b">
+          <Link href="/" className="flex items-center space-x-2">
+            <Droplet className="h-8 w-8 text-red-600" />
+            <span className="font-bold text-xl">BloodDonation</span>
+          </Link>
+          <button className="lg:hidden" onClick={() => setSidebarOpen(false)}>
+            <X className="h-6 w-6" />
+          </button>
+        </div>
 
-      {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setSidebarOpen(false)} />
-          <aside className="fixed top-0 left-0 z-50 w-72 h-full bg-white shadow-lg animate-in slide-in-from-left">
-            <SidebarContent
-              user={user}
-              navItems={navItems}
-              pathname={pathname}
-              roleConfig={roleConfig}
-              onNavigate={() => setSidebarOpen(false)}
-              getInitials={getInitials}
-              logout={logout}
-            />
-          </aside>
-        </>
-      )}
-
-      {/* Desktop Sidebar */}
-      <aside className="fixed top-0 left-0 z-30 w-72 h-full bg-white shadow-lg hidden lg:block">
-        <SidebarContent
-          user={user}
-          navItems={navItems}
-          pathname={pathname}
-          roleConfig={roleConfig}
-          getInitials={getInitials}
-          logout={logout}
-        />
-      </aside>
-
-      {/* Main Content */}
-      <div className="lg:ml-72">
-        {/* Header */}
-        <header className="bg-white shadow-sm sticky top-0 z-20">
-          <div className="flex items-center justify-between px-4 !pl-18 md:px-6! py-4">
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">{currentPage}</h1>
-              <p className="text-sm text-gray-500 mt-0.5">
-                {new Date().toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
+        <div className="p-4 border-b">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+              <User className="h-5 w-5 text-red-600" />
             </div>
-
-            <div className="relative">
-              <Button
-                variant="ghost"
-                className="flex items-center space-x-3"
-                onClick={() => setUserMenuOpen(!userMenuOpen)}
-              >
-                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                  <span className="text-red-600 font-semibold text-sm">
-                    {getInitials(user.full_name)}
-                  </span>
-                </div>
-                <div className="hidden md:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{user.full_name}</p>
-                  <p className="text-xs text-gray-500 capitalize">{user.role}</p>
-                </div>
-                <ChevronDown className="h-4 w-4 text-gray-500" />
-              </Button>
-
-              {userMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setUserMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border z-20">
-                    <button
-                      onClick={() => {
-                        router.push(`/dashboard/${user.role}/profile`);
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <User className="inline mr-2 h-4 w-4" />
-                      Profile
-                    </button>
-                    <button
-                      onClick={() => {
-                        router.push(`/dashboard/${user.role}/settings`);
-                        setUserMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    >
-                      <Settings className="inline mr-2 h-4 w-4" />
-                      Settings
-                    </button>
-                    <hr className="my-1" />
-                    <button
-                      onClick={() => {
-                        setUserMenuOpen(false);
-                        logout();
-                      }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                    >
-                      <LogOut className="inline mr-2 h-4 w-4" />
-                      Logout
-                    </button>
-                  </div>
-                </>
+            <div>
+              <p className="font-semibold text-gray-900">{user.full_name}</p>
+              <p className="text-xs text-gray-500 capitalize">
+                {currentRole === 'donor' || currentRole === 'patient'
+                  ? 'Donor / Patient'
+                  : currentRole}
+              </p>
+              {user.roles && user.roles.length > 1 && (
+                <p className="text-xs text-gray-400">Roles: {user.roles.join(', ')}</p>
               )}
             </div>
           </div>
-        </header>
-
-        <main className="p-4 md:p-6">{children}</main>
-      </div>
-    </div>
-  );
-}
-
-// Sidebar Component
-interface SidebarContentProps {
-  user: AuthUser;
-  navItems: NavItem[];
-  pathname: string;
-  roleConfig: RoleConfig;
-  onNavigate?: () => void;
-  getInitials: (name: string) => string;
-  logout: () => void;
-}
-
-function SidebarContent({
-  user,
-  navItems,
-  pathname,
-  roleConfig,
-  onNavigate,
-  getInitials,
-  logout
-}: SidebarContentProps) {
-  const router = useRouter();
-
-  return (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className="p-6 border-b">
-        <Link href="/" className="flex items-center space-x-2">
-          <Image
-            src="/logo-new.png"
-            alt="BloodDonation Logo"
-            width={200}
-            height={32}
-            className="h-10 w-auto object-contain"
-          />        
-          </Link>
-      </div>
-
-      {/* User Info */}
-      <div className={`p-4 mx-4 mt-4 rounded-xl bg-gradient-to-r ${roleConfig.gradient}`}>
-        <div className="flex items-center space-x-3">
-          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
-            <span className="text-white font-bold text-lg">{getInitials(user.full_name)}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-white truncate">{user.full_name}</p>
-            <p className="text-xs text-white/80 truncate">{user.email}</p>
-            <span className={`inline-block px-2 py-0.5 text-xs rounded-full mt-1 bg-white/20 text-white`}>
-              {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-            </span>
-          </div>
         </div>
-      </div>
 
-      {/* Navigation */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="space-y-1">
-          {navItems.map((item: NavItem) => {
+        <nav className="p-4">
+          {currentNav.map((item) => {
             const Icon = item.icon;
-            const isActive = pathname === item.href;
 
             return (
-              <button
+              <Link
                 key={item.href}
-                onClick={() => {
-                  if (onNavigate) onNavigate();
-                  router.push(item.href);
-                }}
-                className={`w-full flex items-center cursor-pointer px-4 py-3 rounded-lg transition-colors ${isActive
-                  ? 'bg-red-50 text-red-600'
-                  : 'text-gray-700 hover:bg-gray-100'
+                href={item.href}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg mb-1 transition-colors ${pathname === item.href
+                    ? 'bg-red-50 text-red-600'
+                    : 'text-gray-700 hover:bg-gray-100'
                   }`}
               >
-                <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-red-600' : 'text-gray-500'}`} />
-                <span className="flex-1 text-left font-medium">{item.name}</span>
-              </button>
+                <Icon className="h-5 w-5" />
+                <span>{item.name}</span>
+              </Link>
             );
           })}
-        </div>
-      </div>
 
-      {/* Footer */}
-      <div className="p-4 border-t">
-        <button
-          onClick={logout}
-          className="w-full flex items-center px-4 py-3 cursor-pointer rounded-lg text-red-600 hover:bg-red-50 transition-colors"
-        >
-          <LogOut className="mr-3 h-5 w-5" />
-          <span className="font-medium">Logout</span>
-        </button>
+          <div className="border-t my-4"></div>
+
+          <button
+            onClick={logout}
+            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 mt-1"
+          >
+            <LogOut className="h-5 w-5" />
+            <span>Logout</span>
+          </button>
+        </nav>
+      </aside>
+
+      {/* Main Content */}
+      <div className="lg:ml-64">
+        <header className="bg-white shadow-sm sticky top-0 z-10">
+          <div className="flex items-center justify-between px-4 py-3">
+            <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
+              <Menu className="h-6 w-6" />
+            </button>
+
+            <h1 className="text-xl font-semibold">
+              {currentNav.find(item => item.href === pathname)?.name || 'Dashboard'}
+            </h1>
+
+            <div className="flex items-center gap-3">
+              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <Bell className="h-5 w-5 text-gray-600" />
+              </button>
+            </div>
+          </div>
+        </header>
+        <main className="p-6">{children}</main>
       </div>
     </div>
   );

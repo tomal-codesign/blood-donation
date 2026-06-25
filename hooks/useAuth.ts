@@ -1,11 +1,13 @@
 // hooks/useAuth.ts
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { toast } from 'sonner';
 
 export interface User {
   id: string;
   email: string;
-  role: "donor" | "patient" | "hospital" | "admin";
+  roles: string[];
+  currentRole: string;
   full_name: string;
   phone: string;
   city: string;
@@ -30,6 +32,7 @@ interface AuthState {
   logout: () => void;
   login: (token: string, user: User) => void;
   updateUser: (userData: Partial<User>) => void;
+  toggleRole: () => void;
 }
 
 export const useAuth = create<AuthState>()(
@@ -49,16 +52,17 @@ export const useAuth = create<AuthState>()(
       },
 
       login: (token: string, user: User) => {
-        // Validate user has role
-        if (!user.role) {
-          console.error("Login: User role is missing!", user);
-          user.role = "donor";
+        if (!user.roles || user.roles.length === 0) {
+          user.roles = ['donor'];
+          user.currentRole = 'donor';
+        }
+        if (!user.currentRole) {
+          user.currentRole = user.roles[0] || 'donor';
         }
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
         set({ token, user, isLoading: false });
-
-        console.log("✅ User logged in:", user.email, "Role:", user.role);
+        console.log("✅ User logged in:", user.email, "Roles:", user.roles);
       },
 
       updateUser: (userData: Partial<User>) => {
@@ -66,6 +70,32 @@ export const useAuth = create<AuthState>()(
           if (!state.user) return state;
           const updatedUser = { ...state.user, ...userData };
           localStorage.setItem("user", JSON.stringify(updatedUser));
+          return { user: updatedUser };
+        });
+      },
+
+      toggleRole: () => {
+        set((state) => {
+          if (!state.user) return state;
+          
+          const currentRole = state.user.currentRole;
+          const availableRoles = state.user.roles;
+          
+          // Find next role (donor -> patient -> donor)
+          let nextRole = '';
+          if (currentRole === 'donor' && availableRoles.includes('patient')) {
+            nextRole = 'patient';
+          } else if (currentRole === 'patient' && availableRoles.includes('donor')) {
+            nextRole = 'donor';
+          } else {
+            return state;
+          }
+          
+          const updatedUser = { ...state.user, currentRole: nextRole };
+          localStorage.setItem("user", JSON.stringify(updatedUser));
+          
+          toast.success(`Switched to ${nextRole.charAt(0).toUpperCase() + nextRole.slice(1)} mode`);
+          
           return { user: updatedUser };
         });
       },
@@ -87,12 +117,15 @@ if (typeof window !== "undefined") {
   if (token && userData) {
     try {
       const user = JSON.parse(userData);
-      if (!user.role) {
-        console.warn("Stored user missing role, setting default:", user);
-        user.role = "donor";
+      if (!user.roles || user.roles.length === 0) {
+        user.roles = ['donor'];
+        user.currentRole = 'donor';
         localStorage.setItem("user", JSON.stringify(user));
       }
-      console.log("✅ Auth initialized for:", user.email, "Role:", user.role);
+      if (!user.currentRole) {
+        user.currentRole = user.roles[0];
+      }
+      console.log("✅ Auth initialized for:", user.email, "Roles:", user.roles);
       useAuth.getState().setToken(token);
       useAuth.getState().setUser(user);
       useAuth.getState().setLoading(false);
