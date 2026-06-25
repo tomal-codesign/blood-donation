@@ -96,7 +96,6 @@ export default function DashboardLayout({
     { name: 'Find Requests', href: '/dashboard/donor/requests', icon: Search },
     { name: 'Emergency Alerts', href: '/dashboard/donor/alerts', icon: AlertTriangle },
     { name: 'Emergency Request', href: '/dashboard/patient/emergency', icon: Bell },
-    { name: 'Request Status', href: '/dashboard/patient/status', icon: ListChecks },
     { name: 'Profile', href: `/dashboard/${currentRole}/profile`, icon: User },
     { name: 'Settings', href: `/dashboard/${currentRole}/settings`, icon: Settings }
   ];
@@ -191,8 +190,8 @@ export default function DashboardLayout({
                 key={item.href}
                 href={item.href}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg mb-1 transition-colors ${pathname === item.href
-                    ? 'bg-red-50 text-red-600'
-                    : 'text-gray-700 hover:bg-gray-100'
+                  ? 'bg-red-50 text-red-600'
+                  : 'text-gray-700 hover:bg-gray-100'
                   }`}
               >
                 <Icon className="h-5 w-5" />
