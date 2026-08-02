@@ -4,13 +4,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Droplet, Loader2, Info, Users, Building2 } from 'lucide-react';
+import { Loader2, Users, Building2, User, Mail, Phone, MapPin, Lock, UserPlus } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function RegisterPage() {
@@ -24,11 +25,16 @@ export default function RegisterPage() {
     full_name: '',
     phone: '',
     city: '',
+    district: '',
     blood_group: '',
     address: '',
     registration_number: '',
     blood_bank_license: ''
   });
+
+  const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: string; name: string }[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -38,8 +44,30 @@ export default function RegisterPage() {
     }
   }, [user, router]);
 
+  // Load divisions once on mount
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/divisions`)
+      .then(res => res.json())
+      .then(data => setDivisions(data.divisions || []))
+      .catch(() => toast.error('Failed to load divisions'));
+  }, []);
+
+  // Load districts whenever the selected division changes
+  useEffect(() => {
+    if (!formData.city) {
+      setDistricts([]);
+      return;
+    }
+
+    setLoadingDistricts(true);
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/divisions/${encodeURIComponent(formData.city)}/districts`)
+      .then(res => res.json())
+      .then(data => setDistricts(data.districts || []))
+      .catch(() => toast.error('Failed to load districts'))
+      .finally(() => setLoadingDistricts(false));
+  }, [formData.city]);
+
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-  const cities = ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barishal', 'Rangpur', 'Mymensingh'];
 
   // Get role based on user type
   const getRole = () => {
@@ -112,222 +140,261 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-red-100 py-8">
-      <Card className="w-full max-w-lg shadow-2xl border-0">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="bg-gradient-to-r from-red-500 to-red-600 p-3 rounded-full shadow-lg">
-              <Droplet className="h-8 w-8 text-white" />
-            </div>
-          </div>
-          <CardTitle className="text-3xl font-bold text-gray-900">Create Account</CardTitle>
-          <CardDescription className="text-gray-500">
-            Choose your account type
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* User Type Selection */}
-            <div>
-              <Label className="text-sm font-semibold">Account Type</Label>
-              <div className="grid grid-cols-2 gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setUserType('donor_patient')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    userType === 'donor_patient'
-                      ? 'border-red-500 bg-red-50'
-                      : 'border-gray-200 hover:border-red-300'
-                  }`}
-                >
-                  <Users className={`h-6 w-6 mx-auto mb-2 ${userType === 'donor_patient' ? 'text-red-500' : 'text-gray-400'}`} />
-                  <p className={`text-sm font-medium ${userType === 'donor_patient' ? 'text-red-600' : 'text-gray-700'}`}>
-                    Donor / Patient
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">Donate & Request Blood</p>
-                </button>
-                
-                <button
-                  type="button"
-                  onClick={() => setUserType('hospital')}
-                  className={`p-4 rounded-lg border-2 transition-all ${
-                    userType === 'hospital'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <Building2 className={`h-6 w-6 mx-auto mb-2 ${userType === 'hospital' ? 'text-blue-500' : 'text-gray-400'}`} />
-                  <p className={`text-sm font-medium ${userType === 'hospital' ? 'text-blue-600' : 'text-gray-700'}`}>
-                    Hospital
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">Manage Blood Bank</p>
-                </button>
-              </div>
-              
-              {/* Info Box */}
-              <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100 flex items-start gap-2">
-                {getIcon()}
-                <p className="text-xs text-blue-700">{getDescription()}</p>
-              </div>
-            </div>
+    <div className="min-h-screen flex items-center justify-center p-4 py-16">
+      <div className="w-full max-w-lg">
+        <Link href="/" className="flex justify-center mb-8">
+          <Image src="/logo-new.png" alt="PulseCoder" width={200} height={43} className="h-10 w-auto object-contain" priority />
+        </Link>
 
-            {/* Full Name */}
-            <div>
-              <Label className="text-sm font-semibold">Full Name *</Label>
-              <Input
-                required
-                placeholder="John Doe"
-                value={formData.full_name}
-                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-
-            {/* Email */}
-            <div>
-              <Label className="text-sm font-semibold">Email *</Label>
-              <Input
-                type="email"
-                required
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-
-            {/* Phone */}
-            <div>
-              <Label className="text-sm font-semibold">Phone Number *</Label>
-              <Input
-                required
-                placeholder="017XXXXXXXX"
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="mt-1"
-              />
-            </div>
-
-            {/* City */}
-            <div>
-              <Label className="text-sm font-semibold">City *</Label>
-              <Select onValueChange={(value) => setFormData({ ...formData, city: value })}>
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Select your city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map(city => (
-                    <SelectItem key={city} value={city}>{city}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Blood Group (for donor/patient) */}
-            {userType === 'donor_patient' && (
+        <Card className="border border-gray-100 shadow-2xl shadow-gray-900/10 rounded-3xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-extrabold text-gray-900 tracking-tight">Create your account</CardTitle>
+            <CardDescription className="text-gray-500">
+              Choose your account type to get started
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* User Type Selection */}
               <div>
-                <Label className="text-sm font-semibold">Blood Group *</Label>
-                <Select onValueChange={(value) => setFormData({ ...formData, blood_group: value })}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select blood group" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {bloodGroups.map(bg => (
-                      <SelectItem key={bg} value={bg}>{bg}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label className="text-sm font-semibold">Account Type</Label>
+                <div className="grid grid-cols-2 gap-3 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setUserType('donor_patient')}
+                    className={`cursor-pointer p-4 rounded-2xl border-2 transition-all ${
+                      userType === 'donor_patient'
+                        ? 'border-red-400 bg-gradient-to-br from-red-50 to-rose-100 shadow-md shadow-red-500/10'
+                        : 'border-gray-200 hover:border-red-200'
+                    }`}
+                  >
+                    <Users className={`h-6 w-6 mx-auto mb-2 ${userType === 'donor_patient' ? 'text-red-500' : 'text-gray-400'}`} />
+                    <p className={`text-sm font-medium ${userType === 'donor_patient' ? 'text-red-600' : 'text-gray-700'}`}>
+                      Donor / Patient
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Donate & Request Blood</p>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setUserType('hospital')}
+                    className={`cursor-pointer p-4 rounded-2xl border-2 transition-all ${
+                      userType === 'hospital'
+                        ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-cyan-100 shadow-md shadow-blue-500/10'
+                        : 'border-gray-200 hover:border-blue-200'
+                    }`}
+                  >
+                    <Building2 className={`h-6 w-6 mx-auto mb-2 ${userType === 'hospital' ? 'text-blue-500' : 'text-gray-400'}`} />
+                    <p className={`text-sm font-medium ${userType === 'hospital' ? 'text-blue-600' : 'text-gray-700'}`}>
+                      Hospital
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Manage Blood Bank</p>
+                  </button>
+                </div>
+
+                {/* Info Box */}
+                <div className="mt-3 p-3 bg-gray-50 rounded-xl border border-gray-100 flex items-start gap-2">
+                  {getIcon()}
+                  <p className="text-xs text-gray-600">{getDescription()}</p>
+                </div>
               </div>
-            )}
 
-            {/* Hospital Fields */}
-            {userType === 'hospital' && (
-              <>
-                <div>
-                  <Label className="text-sm font-semibold">Address</Label>
+              {/* Full Name */}
+              <div>
+                <Label className="text-sm font-semibold">Full Name *</Label>
+                <div className="relative mt-1">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="123, Hospital Road, Area"
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    className="mt-1"
+                    required
+                    placeholder="John Doe"
+                    value={formData.full_name}
+                    onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                    className="pl-10"
                   />
                 </div>
-                <div>
-                  <Label className="text-sm font-semibold">Registration Number</Label>
+              </div>
+
+              {/* Email */}
+              <div>
+                <Label className="text-sm font-semibold">Email *</Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="HOSP-2024-001"
-                    value={formData.registration_number}
-                    onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
-                    className="mt-1"
+                    type="email"
+                    required
+                    placeholder="john@example.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="pl-10"
                   />
                 </div>
-                <div>
-                  <Label className="text-sm font-semibold">Blood Bank License</Label>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <Label className="text-sm font-semibold">Phone Number *</Label>
+                <div className="relative mt-1">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
-                    placeholder="BB-2024-001"
-                    value={formData.blood_bank_license}
-                    onChange={(e) => setFormData({ ...formData, blood_bank_license: e.target.value })}
-                    className="mt-1"
+                    required
+                    placeholder="017XXXXXXXX"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    className="pl-10"
                   />
                 </div>
-              </>
-            )}
+              </div>
 
-            {/* Password */}
-            <div>
-              <Label className="text-sm font-semibold">Password *</Label>
-              <Input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="mt-1"
-              />
-              <p className="text-xs text-gray-400 mt-1">Password must be at least 6 characters</p>
-            </div>
+              {/* Division & District */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-sm font-semibold">Division *</Label>
+                  <div className="relative mt-1">
+                    <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+                    <Select onValueChange={(value) => setFormData({ ...formData, city: value, district: '' })}>
+                      <SelectTrigger className="pl-10">
+                        <SelectValue placeholder="Division" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {divisions.map(division => (
+                          <SelectItem key={division.id} value={division.name}>{division.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
 
-            {/* Benefits */}
-            <div className={`p-3 rounded-lg border ${
-              userType === 'donor_patient' 
-                ? 'bg-red-50 border-red-200' 
-                : 'bg-blue-50 border-blue-200'
-            }`}>
-              <p className="text-xs font-medium">
-                {userType === 'donor_patient' 
-                  ? '✅ As a donor, you can donate blood and also request blood as a patient. Both roles will be available.' 
-                  : '✅ As a hospital, you can manage blood inventory, view requests, and access donor lists.'}
-              </p>
-            </div>
+                <div>
+                  <Label className="text-sm font-semibold">District</Label>
+                  <Select
+                    value={formData.district}
+                    onValueChange={(value) => setFormData({ ...formData, district: value })}
+                    disabled={!formData.city || loadingDistricts}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder={!formData.city ? 'Pick division first' : loadingDistricts ? 'Loading...' : 'District'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {districts.map(district => (
+                        <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-            <Button 
-              type="submit" 
-              className={`w-full text-white font-semibold py-6 ${
-                userType === 'donor_patient'
-                  ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
-                  : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700'
-              }`}
-              disabled={loading}
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                `Register as ${userType === 'donor_patient' ? 'Donor / Patient' : 'Hospital'}`
+              {/* Blood Group (for donor/patient) */}
+              {userType === 'donor_patient' && (
+                <div>
+                  <Label className="text-sm font-semibold">Blood Group *</Label>
+                  <Select onValueChange={(value) => setFormData({ ...formData, blood_group: value })}>
+                    <SelectTrigger className="mt-1">
+                      <SelectValue placeholder="Select blood group" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {bloodGroups.map(bg => (
+                        <SelectItem key={bg} value={bg}>{bg}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )}
-            </Button>
-          </form>
 
-          <div className="mt-6 text-center text-sm">
-            <span className="text-gray-500">Already have an account?</span>{' '}
-            <Link href="/login" className="text-red-600 hover:text-red-700 font-semibold hover:underline">
-              Login here
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+              {/* Hospital Fields */}
+              {userType === 'hospital' && (
+                <>
+                  <div>
+                    <Label className="text-sm font-semibold">Address</Label>
+                    <Input
+                      placeholder="123, Hospital Road, Area"
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-semibold">Registration Number</Label>
+                    <Input
+                      placeholder="HOSP-2024-001"
+                      value={formData.registration_number}
+                      onChange={(e) => setFormData({ ...formData, registration_number: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-semibold">Blood Bank License</Label>
+                    <Input
+                      placeholder="BB-2024-001"
+                      value={formData.blood_bank_license}
+                      onChange={(e) => setFormData({ ...formData, blood_bank_license: e.target.value })}
+                      className="mt-1"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Password */}
+              <div>
+                <Label className="text-sm font-semibold">Password *</Label>
+                <div className="relative mt-1">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="pl-10"
+                  />
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Password must be at least 6 characters</p>
+              </div>
+
+              {/* Benefits */}
+              <div className={`p-3 rounded-xl border ${
+                userType === 'donor_patient'
+                  ? 'bg-gradient-to-r from-red-50 to-rose-50 border-red-100'
+                  : 'bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-100'
+              }`}>
+                <p className="text-xs font-medium text-gray-700">
+                  {userType === 'donor_patient'
+                    ? 'As a donor, you can donate blood and also request blood as a patient. Both roles will be available.'
+                    : 'As a hospital, you can manage blood inventory, view requests, and access donor lists.'}
+                </p>
+              </div>
+
+              <Button
+                type="submit"
+                className={`w-full text-white font-semibold py-6 cursor-pointer shadow-lg hover:scale-[1.01] transition-transform ${
+                  userType === 'donor_patient'
+                    ? 'bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 hover:opacity-90 shadow-red-500/30'
+                    : 'bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-90 shadow-blue-500/30'
+                }`}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Register as {userType === 'donor_patient' ? 'Donor / Patient' : 'Hospital'}
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center text-sm">
+              <span className="text-gray-500">Already have an account?</span>{' '}
+              <Link href="/login" className="text-red-600 hover:text-red-700 font-semibold hover:underline">
+                Login here
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
