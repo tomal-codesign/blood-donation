@@ -1,8 +1,8 @@
 // app/dashboard/patient/new-request/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/api';
 import {
@@ -33,11 +33,24 @@ import {
 import Link from 'next/link';
 
 export default function NewRequestPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    }>
+      <NewRequestContent />
+    </Suspense>
+  );
+}
+
+function NewRequestContent() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    blood_group: '',
+    blood_group: searchParams?.get('blood_group') || '',
     units_needed: 1,
     priority: 'normal',
     hospital_name: '',

@@ -76,8 +76,6 @@ export default function Navbar() {
             <NavLink href="/about">About</NavLink>
             <NavLink href="/faq">FAQ</NavLink>
             <NavLink href="/emergency" isEmergency>Emergency</NavLink>
-
-            {user && <RoleToggle />}
           </div>
 
           {/* Desktop Auth Buttons */}
