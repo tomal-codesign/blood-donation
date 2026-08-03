@@ -2,55 +2,165 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
 } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Droplet, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Droplet,
   Loader2,
   Save,
-  Edit,
-  X
+  Edit2,
+  X,
+  ChevronRight,
+  Shield,
+  Building2,
+  Globe
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface Division {
+  id: number;
+  name: string;
+}
+
+interface District {
+  id: number;
+  name: string;
+}
 
 export default function DonorProfilePage() {
   const { user, token, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [divisions, setDivisions] = useState<Division[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [loadingDivisions, setLoadingDivisions] = useState(false);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
-    city: '',
+    division: '',
+    district: '',
     blood_group: ''
   });
 
-  const cities = ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barishal', 'Rangpur', 'Mymensingh'];
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
+  // Fetch divisions on mount
+  useEffect(() => {
+    fetchDivisions();
+  }, []);
+
+  // Fetch districts when division changes
+  useEffect(() => {
+    if (formData.division) {
+      fetchDistricts(formData.division);
+    } else {
+      setDistricts([]);
+    }
+  }, [formData.division]);
+
+  // Initialize form data from user
   useEffect(() => {
     if (user) {
       setFormData({
         full_name: user.full_name || '',
         phone: user.phone || '',
-        city: user.city || '',
+        division: user.division || '',
+        district: user.district || '',
         blood_group: user.blood_group || ''
       });
     }
   }, [user]);
+
+  // Retry function for API calls
+  const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3, delay = 1000): Promise<Response> => {
+    try {
+      const response = await fetch(url, options);
+
+      // If server is waking up (slow response), retry
+      if (response.status === 408 || response.status === 503 || !response.ok) {
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchWithRetry(url, options, retries - 1, delay * 2);
+        }
+      }
+
+      return response;
+    } catch (error) {
+      // Network errors, retry
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWithRetry(url, options, retries - 1, delay * 2);
+      }
+      throw error;
+    }
+  };
+
+  const fetchDivisions = async (retryCount = 0) => {
+    setLoadingDivisions(true);
+    try {
+      const response = await fetchWithRetry(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/divisions`
+        // No Authorization header needed for divisions API
+      );
+      const data = await response.json();
+      if (data.success) {
+        setDivisions(data.divisions || []);
+      } else {
+        throw new Error(data.error || 'Failed to fetch divisions');
+      }
+    } catch (error) {
+      console.error('Failed to fetch divisions:', error);
+      if (retryCount < 2) {
+        // Retry after 2 seconds
+        setTimeout(() => fetchDivisions(retryCount + 1), 2000);
+      } else {
+        toast.error('Failed to load divisions. Please refresh the page.');
+      }
+    } finally {
+      setLoadingDivisions(false);
+    }
+  };
+
+  const fetchDistricts = async (divisionName: string, retryCount = 0) => {
+    setLoadingDistricts(true);
+    setDistricts([]);
+    try {
+      const response = await fetchWithRetry(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/divisions/${encodeURIComponent(divisionName)}/districts`
+        // No Authorization header needed for districts API
+      );
+      const data = await response.json();
+      if (data.success) {
+        setDistricts(data.districts || []);
+      } else {
+        throw new Error(data.error || 'Failed to fetch districts');
+      }
+    } catch (error) {
+      console.error('Failed to fetch districts:', error);
+      if (retryCount < 2) {
+        // Retry after 2 seconds
+        setTimeout(() => fetchDistricts(divisionName, retryCount + 1), 2000);
+      } else {
+        toast.error('Failed to load districts. Please try again.');
+      }
+    } finally {
+      setLoadingDistricts(false);
+    }
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -65,7 +175,11 @@ export default function DonorProfilePage() {
           },
           body: JSON.stringify({
             user_id: user?.id,
-            ...formData
+            full_name: formData.full_name,
+            phone: formData.phone,
+            division: formData.division,
+            district: formData.district,
+            blood_group: formData.blood_group
           })
         }
       );
@@ -92,40 +206,94 @@ export default function DonorProfilePage() {
     setFormData({
       full_name: user?.full_name || '',
       phone: user?.phone || '',
-      city: user?.city || '',
+      division: user?.division || '',
+      district: user?.district || '',
       blood_group: user?.blood_group || ''
     });
     setIsEditing(false);
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
+    <div className="max-w-4xl mx-auto space-y-8">
+      {/* Page Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 text-sm text-gray-500 mb-1">
+            <span>Dashboard</span>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-gray-900 font-medium">Profile</span>
+          </div>
           <h1 className="text-2xl font-bold text-gray-900">My Profile</h1>
-          <p className="text-gray-500 mt-1">Manage your personal information</p>
+          <p className="text-gray-500 mt-1">Manage your personal information and preferences</p>
         </div>
         {!isEditing && (
-          <Button onClick={() => setIsEditing(true)} className="bg-red-600 hover:bg-red-700">
-            <Edit className="h-4 w-4 mr-2" />
+          <Button
+            onClick={() => setIsEditing(true)}
+            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-200 rounded-xl px-6"
+          >
+            <Edit2 className="h-4 w-4 mr-2" />
             Edit Profile
           </Button>
         )}
       </div>
 
+      {/* Profile Overview Card */}
+      <div className="bg-gradient-to-br from-red-500 to-red-700 rounded-2xl p-6 sm:p-8 text-white shadow-xl shadow-red-200">
+        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+          <div className="w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center flex-shrink-0 ring-4 ring-white/30">
+            <span className="text-3xl font-bold">
+              {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
+            </span>
+          </div>
+          <div className="text-center sm:text-left flex-1">
+            <h2 className="text-2xl font-bold">{user?.full_name || 'User'}</h2>
+            <p className="text-red-100 mt-1">{user?.email || ''}</p>
+            <div className="flex flex-wrap gap-2 mt-4 justify-center sm:justify-start">
+              {user?.blood_group && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
+                  <Droplet className="h-3.5 w-3.5" />
+                  {user.blood_group}
+                </span>
+              )}
+              {user?.district && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
+                  <MapPin className="h-3.5 w-3.5" />
+                  {user.district}
+                </span>
+              )}
+              {user?.division && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
+                  <Building2 className="h-3.5 w-3.5" />
+                  {user.division}
+                </span>
+              )}
+              {user?.phone && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm rounded-full text-sm font-medium">
+                  <Phone className="h-3.5 w-3.5" />
+                  {user.phone}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Profile Form */}
-      <Card>
-        <CardContent className="p-6 space-y-5">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+          <p className="text-sm text-gray-500 mt-0.5">Update your personal details</p>
+        </div>
+        <div className="p-6 space-y-6">
           {/* Full Name */}
-          <div>
-            <Label className="text-sm font-semibold">Full Name</Label>
-            <div className="relative mt-1">
-              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Full Name</Label>
+            <div className="relative">
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                className="pl-10"
+                className={`pl-10 h-11 rounded-xl border-gray-200 focus:border-red-400 focus:ring-red-400/20 ${!isEditing ? 'bg-gray-50' : ''}`}
                 value={formData.full_name}
-                onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 disabled={!isEditing}
                 placeholder="Enter your full name"
               />
@@ -133,57 +301,97 @@ export default function DonorProfilePage() {
           </div>
 
           {/* Email (Read Only) */}
-          <div>
-            <Label className="text-sm font-semibold">Email Address</Label>
-            <div className="relative mt-1">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Email Address</Label>
+            <div className="relative">
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                className="pl-10 bg-gray-50"
+                className="pl-10 h-11 rounded-xl bg-gray-50 border-gray-200 text-gray-500"
                 value={user?.email || ''}
                 disabled
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">Email cannot be changed</p>
+            <p className="text-xs text-gray-400 flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Email cannot be changed
+            </p>
           </div>
 
           {/* Phone */}
-          <div>
-            <Label className="text-sm font-semibold">Phone Number</Label>
-            <div className="relative mt-1">
-              <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Phone Number</Label>
+            <div className="relative">
+              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
-                className="pl-10"
+                className={`pl-10 h-11 rounded-xl border-gray-200 focus:border-red-400 focus:ring-red-400/20 ${!isEditing ? 'bg-gray-50' : ''}`}
                 value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 disabled={!isEditing}
                 placeholder="017XXXXXXXX"
               />
             </div>
           </div>
 
-          {/* City */}
-          <div>
-            <Label className="text-sm font-semibold">City</Label>
-            <div className="relative mt-1">
-              <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          {/* Division */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Division</Label>
+            <div className="relative">
+              <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
               {isEditing ? (
-                <Select 
-                  value={formData.city} 
-                  onValueChange={(value) => setFormData({...formData, city: value})}
+                <Select
+                  value={formData.division}
+                  onValueChange={(value) => setFormData({ ...formData, division: value, district: '' })}
+                  disabled={loadingDivisions}
                 >
-                  <SelectTrigger className="pl-10">
-                    <SelectValue placeholder="Select your city" />
+                  <SelectTrigger className="pl-10 h-11 rounded-xl border-gray-200 focus:border-red-400 focus:ring-red-400/20">
+                    <SelectValue placeholder={loadingDivisions ? "Loading divisions..." : "Select your division"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {cities.map(city => (
-                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    {divisions.map((div) => (
+                      <SelectItem key={div.id} value={div.name}>{div.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               ) : (
                 <Input
-                  className="pl-10"
-                  value={formData.city}
+                  className="pl-10 h-11 rounded-xl bg-gray-50 border-gray-200"
+                  value={formData.division || 'Not set'}
+                  disabled
+                />
+              )}
+            </div>
+          </div>
+
+          {/* District */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">District</Label>
+            <div className="relative">
+              <Globe className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
+              {isEditing ? (
+                <Select
+                  value={formData.district}
+                  onValueChange={(value) => setFormData({ ...formData, district: value })}
+                  disabled={!formData.division || loadingDistricts}
+                >
+                  <SelectTrigger className="pl-10 h-11 rounded-xl border-gray-200 focus:border-red-400 focus:ring-red-400/20">
+                    <SelectValue placeholder={
+                      !formData.division
+                        ? "Select a division first"
+                        : loadingDistricts
+                          ? "Loading districts..."
+                          : "Select your district"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districts.map((dist) => (
+                      <SelectItem key={dist.id} value={dist.name}>{dist.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  className="pl-10 h-11 rounded-xl bg-gray-50 border-gray-200"
+                  value={formData.district || 'Not set'}
                   disabled
                 />
               )}
@@ -191,16 +399,16 @@ export default function DonorProfilePage() {
           </div>
 
           {/* Blood Group */}
-          <div>
-            <Label className="text-sm font-semibold">Blood Group</Label>
-            <div className="relative mt-1">
-              <Droplet className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-gray-700">Blood Group</Label>
+            <div className="relative">
+              <Droplet className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-red-400 z-10" />
               {isEditing ? (
-                <Select 
-                  value={formData.blood_group} 
-                  onValueChange={(value) => setFormData({...formData, blood_group: value})}
+                <Select
+                  value={formData.blood_group}
+                  onValueChange={(value) => setFormData({ ...formData, blood_group: value })}
                 >
-                  <SelectTrigger className="pl-10">
+                  <SelectTrigger className="pl-10 h-11 rounded-xl border-gray-200 focus:border-red-400 focus:ring-red-400/20">
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -211,8 +419,8 @@ export default function DonorProfilePage() {
                 </Select>
               ) : (
                 <Input
-                  className="pl-10"
-                  value={formData.blood_group}
+                  className="pl-10 h-11 rounded-xl bg-gray-50 border-gray-200"
+                  value={formData.blood_group || 'Not set'}
                   disabled
                 />
               )}
@@ -221,11 +429,11 @@ export default function DonorProfilePage() {
 
           {/* Action Buttons */}
           {isEditing && (
-            <div className="flex gap-3 pt-4">
-              <Button 
-                onClick={handleSave} 
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+              <Button
+                onClick={handleSave}
                 disabled={loading}
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white shadow-lg shadow-red-200"
               >
                 {loading ? (
                   <>
@@ -239,18 +447,37 @@ export default function DonorProfilePage() {
                   </>
                 )}
               </Button>
-              <Button 
-                onClick={handleCancel} 
+              <Button
+                onClick={handleCancel}
                 variant="outline"
-                className="flex-1"
+                className="flex-1 h-11 rounded-xl border-gray-200 hover:bg-gray-50"
               >
                 <X className="h-4 w-4 mr-2" />
                 Cancel
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Account Info Card */}
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100">
+          <h3 className="text-lg font-semibold text-gray-900">Account Information</h3>
+          <p className="text-sm text-gray-500 mt-0.5">Your account details</p>
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="flex items-center justify-between py-3 px-4 bg-gray-50 rounded-xl">
+            <div className="flex items-center gap-3">
+              <Shield className="h-4 w-4 text-gray-400" />
+              <span className="text-sm text-gray-600">Account Type</span>
+            </div>
+            <span className="text-sm font-medium text-gray-900 capitalize">
+              {user?.currentRole || user?.roles?.[0] || 'Donor'}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

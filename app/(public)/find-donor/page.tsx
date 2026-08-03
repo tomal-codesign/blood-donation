@@ -84,20 +84,20 @@ export default function FindDonorPage() {
 
     try {
       // Call the backend API for AI donor matching
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/match`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          blood_group: searchParams.blood_group,
-          city: searchParams.division,
-          district: searchParams.district,
-          location_lat: 23.8103, // Get from user's location or city center
-          location_lng: 90.4125,
-          units_needed: 1
-        })
-      });
+       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/match`, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           blood_group: searchParams.blood_group,
+           division: searchParams.division,
+           district: searchParams.district,
+           location_lat: 23.8103, // Get from user's location or city center
+           location_lng: 90.4125,
+           units_needed: 1
+         })
+       });
 
       const data = await response.json();
 
@@ -210,40 +210,6 @@ export default function FindDonorPage() {
                 </Select>
               </div>
             </div>
-
-            {/* Additional Filters Toggle */}
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowFilters(!showFilters)}
-                className="text-gray-600"
-              >
-                <Filter className="h-4 w-4 mr-2" />
-                {showFilters ? 'Hide Filters' : 'Show Filters'}
-              </Button>
-            </div>
-
-            {showFilters && (
-              <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium mb-2 block">Availability</Label>
-                    <Select onValueChange={(value: any) => setAvailabilityFilter(value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="All donors" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Donors</SelectItem>
-                        <SelectItem value="available">Available Only</SelectItem>
-                        <SelectItem value="unavailable">Unavailable Only</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="flex gap-3 mt-6">
               <Button type="button" onClick={handleSearch} className="flex-1 bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 hover:opacity-90 shadow-lg shadow-red-500/30 cursor-pointer hover:scale-[1.01] transition-transform" disabled={loading}>
@@ -420,10 +386,10 @@ function DonorCard({ donor, isSelected, onSelect }: any) {
         </div>
 
         <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
-          <div className="flex items-center text-gray-600">
-            <MapPin className="h-3 w-3 mr-1" />
-            {donor.city}
-          </div>
+         <div className="flex items-center text-gray-600">
+           <MapPin className="h-3 w-3 mr-1" />
+           {donor.division}, {donor.district}
+         </div>
           <div className="flex items-center text-gray-600">
             <Award className="h-3 w-3 mr-1" />
             {donor.total_donations} donations
@@ -463,7 +429,7 @@ function DonorDetails({ donor, getEligibilityStatus }: any) {
           <DetailItem label="Total Donations" value={`${donor.total_donations} times`} icon={<Award className="h-4 w-4" />} />
           <DetailItem label="Last Donation" value={donor.last_donation_date || 'Never'} icon={<Calendar className="h-4 w-4" />} />
           <DetailItem label="Eligibility" value={getEligibilityStatus(donor.last_donation_date)} icon={<Clock className="h-4 w-4" />} />
-          <DetailItem label="Location" value={donor.city} icon={<MapPin className="h-4 w-4" />} />
+           <DetailItem label="Location" value={`${donor.division}, ${donor.district}`} icon={<MapPin className="h-4 w-4" />} />
           <DetailItem label="Availability" value={donor.is_available ? 'Available' : 'Unavailable'} icon={<CheckCircle className="h-4 w-4" />} />
         </div>
           <Button
