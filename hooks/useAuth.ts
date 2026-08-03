@@ -11,6 +11,8 @@ export interface User {
   full_name: string;
   phone: string;
   city: string;
+  division?: string;
+  district?: string;
   blood_group?: string;
   is_available?: boolean;
   total_donations?: number;

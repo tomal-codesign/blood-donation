@@ -37,7 +37,8 @@ interface RecentRequest {
   id: number;
   blood_group: string;
   hospital: string;
-  city: string;
+  division?: string;
+  district?: string;
   priority: string;
 }
 
@@ -76,9 +77,9 @@ export default function DonorDashboard() {
       }
 
       // Fetch recent blood requests
-      const requestsResponse = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/requests?city=${user?.city}&limit=3`
-      );
+const requestsResponse = await fetch(
+  `${process.env.NEXT_PUBLIC_API_URL}/api/requests?limit=3`
+);
       if (requestsResponse.ok) {
         const data = await requestsResponse.json();
         setRecentRequests(data.requests || []);
@@ -95,10 +96,7 @@ export default function DonorDashboard() {
         impact: 15,
         nextEligible: 'Ready now'
       });
-      setRecentRequests([
-        { id: 1, blood_group: 'O-', hospital: 'Dhaka Medical', city: 'Dhaka', priority: 'critical' },
-        { id: 2, blood_group: 'A+', hospital: 'Square Hospital', city: 'Dhaka', priority: 'moderate' }
-      ]);
+      setRecentRequests([]);
     } finally {
       setLoading(false);
     }

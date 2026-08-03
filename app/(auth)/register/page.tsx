@@ -24,7 +24,7 @@ export default function RegisterPage() {
     password: '',
     full_name: '',
     phone: '',
-    city: '',
+    division: '',
     district: '',
     blood_group: '',
     address: '',
@@ -44,28 +44,79 @@ export default function RegisterPage() {
     }
   }, [user, router]);
 
+  // Retry function for API calls
+  const fetchWithRetry = async (url: string, retries = 3, delay = 1000): Promise<Response> => {
+    try {
+      const response = await fetch(url);
+
+      // If server is waking up (slow response), retry
+      if (response.status === 408 || response.status === 503 || !response.ok) {
+        if (retries > 0) {
+          await new Promise(resolve => setTimeout(resolve, delay));
+          return fetchWithRetry(url, retries - 1, delay * 2);
+        }
+      }
+
+      return response;
+    } catch (error) {
+      // Network errors, retry
+      if (retries > 0) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return fetchWithRetry(url, retries - 1, delay * 2);
+      }
+      throw error;
+    }
+  };
+
   // Load divisions once on mount
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/divisions`)
-      .then(res => res.json())
-      .then(data => setDivisions(data.divisions || []))
-      .catch(() => toast.error('Failed to load divisions'));
+    const loadDivisions = async () => {
+      try {
+        const response = await fetchWithRetry(`${process.env.NEXT_PUBLIC_API_URL}/api/divisions`);
+        const data = await response.json();
+        if (data.success) {
+          setDivisions(data.divisions || []);
+        } else {
+          throw new Error(data.error || 'Failed to fetch divisions');
+        }
+      } catch (error) {
+        console.error('Failed to load divisions:', error);
+        toast.error('Failed to load divisions. Please refresh the page.');
+      }
+    };
+
+    loadDivisions();
   }, []);
 
   // Load districts whenever the selected division changes
   useEffect(() => {
-    if (!formData.city) {
+if (!formData.division) {
       setDistricts([]);
       return;
     }
 
-    setLoadingDistricts(true);
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/divisions/${encodeURIComponent(formData.city)}/districts`)
-      .then(res => res.json())
-      .then(data => setDistricts(data.districts || []))
-      .catch(() => toast.error('Failed to load districts'))
-      .finally(() => setLoadingDistricts(false));
-  }, [formData.city]);
+    const loadDistricts = async () => {
+      setLoadingDistricts(true);
+      try {
+        const response = await fetchWithRetry(
+`${process.env.NEXT_PUBLIC_API_URL}/api/divisions/${encodeURIComponent(formData.division)}/districts`
+        );
+        const data = await response.json();
+        if (data.success) {
+          setDistricts(data.districts || []);
+        } else {
+          throw new Error(data.error || 'Failed to fetch districts');
+        }
+      } catch (error) {
+        console.error('Failed to load districts:', error);
+        toast.error('Failed to load districts. Please try again.');
+      } finally {
+        setLoadingDistricts(false);
+      }
+    };
+
+    loadDistricts();
+}, [formData.division]);
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
@@ -251,7 +302,7 @@ export default function RegisterPage() {
                   <Label className="text-sm font-semibold">Division *</Label>
                   <div className="relative mt-1">
                     <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 z-10" />
-                    <Select onValueChange={(value) => setFormData({ ...formData, city: value, district: '' })}>
+<Select onValueChange={(value) => setFormData({ ...formData, division: value, district: '' })}>
                       <SelectTrigger className="pl-10">
                         <SelectValue placeholder="Division" />
                       </SelectTrigger>
@@ -269,10 +320,10 @@ export default function RegisterPage() {
                   <Select
                     value={formData.district}
                     onValueChange={(value) => setFormData({ ...formData, district: value })}
-                    disabled={!formData.city || loadingDistricts}
+disabled={!formData.division || loadingDistricts}
                   >
                     <SelectTrigger className="mt-1">
-                      <SelectValue placeholder={!formData.city ? 'Pick division first' : loadingDistricts ? 'Loading...' : 'District'} />
+<SelectValue placeholder={!formData.division ? 'Pick division first' : loadingDistricts ? 'Loading...' : 'District'} />
                     </SelectTrigger>
                     <SelectContent>
                       {districts.map(district => (

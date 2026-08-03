@@ -53,21 +53,29 @@ export default function LoginPage() {
 
       console.log('✅ Login response:', data);
 
-      // Validate user data
-      if (!data.user || !data.token) {
-        toast.error('Invalid response from server');
-        setLoading(false);
-        return;
-      }
+       // Validate user data
+       if (!data.user || !data.token) {
+         toast.error('Invalid response from server');
+         setLoading(false);
+         return;
+       }
 
-      // Ensure user has roles
-      if (!data.user.roles || data.user.roles.length === 0) {
-        data.user.roles = ['donor'];
-        data.user.currentRole = 'donor';
-      }
-      if (!data.user.currentRole) {
-        data.user.currentRole = data.user.roles[0];
-      }
+       // Ensure user has division and district (default to empty string if missing)
+       if (data.user.division === undefined) {
+         data.user.division = '';
+       }
+       if (data.user.district === undefined) {
+         data.user.district = '';
+       }
+
+       // Ensure user has roles
+       if (!data.user.roles || data.user.roles.length === 0) {
+         data.user.roles = ['donor'];
+         data.user.currentRole = 'donor';
+       }
+       if (!data.user.currentRole) {
+         data.user.currentRole = data.user.roles[0];
+       }
 
       // Store in localStorage
       localStorage.setItem('token', data.token);
