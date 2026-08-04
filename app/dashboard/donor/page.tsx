@@ -19,8 +19,14 @@ import {
   Activity,
   Gift,
   ChevronRight,
-  MapPin,
-  Loader2
+  Loader2,
+  Sparkles,
+  HeartPulse,
+  CheckCircle2,
+  XCircle,
+  Building2,
+  History,
+  Search,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -57,6 +63,7 @@ export default function DonorDashboard() {
 
   useEffect(() => {
     fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchDashboardData = async () => {
@@ -77,9 +84,9 @@ export default function DonorDashboard() {
       }
 
       // Fetch recent blood requests
-const requestsResponse = await fetch(
-  `${process.env.NEXT_PUBLIC_API_URL}/api/requests?limit=3`
-);
+      const requestsResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/requests?limit=3`
+      );
       if (requestsResponse.ok) {
         const data = await requestsResponse.json();
         setRecentRequests(data.requests || []);
@@ -124,8 +131,18 @@ const requestsResponse = await fetch(
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-12 w-12 animate-spin text-red-600" />
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="relative">
+          <div className="absolute inset-0 bg-red-200/50 rounded-full blur-xl animate-pulse"></div>
+          <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-red-500 via-rose-500 to-orange-400 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <Droplet className="h-8 w-8 text-white animate-bounce" />
+          </div>
+        </div>
+        <p className="mt-5 text-gray-500 font-medium">Loading your dashboard...</p>
+        <div className="mt-3 h-1.5 w-48 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full w-1/2 bg-gradient-to-r from-red-500 to-rose-500 rounded-full animate-[loading_1s_ease-in-out_infinite]"></div>
+        </div>
+        <style>{`@keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }`}</style>
       </div>
     );
   }
@@ -135,116 +152,185 @@ const requestsResponse = await fetch(
   const totalDonations = stats?.totalDonations ?? 0;
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-red-600 via-red-500 to-red-600 rounded-xl p-6 text-white">
-        <div className="absolute right-0 top-0 opacity-10">
-          <Heart className="h-32 w-32" />
-        </div>
-        <div className="absolute left-0 bottom-0 opacity-5">
-          <Droplet className="h-40 w-40" />
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="h-5 w-5 text-red-200" />
-            <span className="text-red-100 text-sm">Hero Donor</span>
-          </div>
-          <h2 className="text-2xl font-bold">Welcome back, {user?.full_name?.split(' ')[0] || 'Donor'}!</h2>
-          <p className="text-red-100 text-sm mt-1">Your next donation can save up to 3 lives</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Badge className="bg-white/20 text-white border-none">
-              <Activity className="h-3 w-3 mr-1" />
-              Active Donor
-            </Badge>
-            <Badge className="bg-white/20 text-white border-none">
-              <TrendingUp className="h-3 w-3 mr-1" />
-              {totalDonations} Donations
-            </Badge>
-            {stats.nextEligible !== 'Ready now' && (
-              <Badge className="bg-yellow-500/30 text-yellow-100 border-none">
-                <Clock className="h-3 w-3 mr-1" />
-                Eligible: {stats.nextEligible}
+    <div className="max-w-6xl mx-auto space-y-6">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-600 via-rose-600 to-orange-500 p-6 sm:p-8 shadow-xl shadow-red-500/20">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full"></div>
+        <div className="absolute -bottom-16 -left-8 w-48 h-48 bg-white/5 rounded-full"></div>
+        <div className="absolute top-4 right-24 w-12 h-12 bg-white/10 rounded-xl rotate-12"></div>
+
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-semibold mb-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              Hero Donor Dashboard
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">
+              Welcome back, {user?.full_name?.split(' ')[0] || 'Donor'}!
+            </h1>
+            <p className="text-red-50 mt-1.5 text-sm sm:text-base max-w-md">
+              Your next donation can save up to 3 lives. Keep up the amazing work!
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <Badge className="bg-white/20 text-white border-none">
+                <Activity className="h-3 w-3 mr-1" />
+                Active Donor
               </Badge>
-            )}
+              <Badge className="bg-white/20 text-white border-none">
+                <TrendingUp className="h-3 w-3 mr-1" />
+                {totalDonations} Donations
+              </Badge>
+              {stats.nextEligible !== 'Ready now' && (
+                <Badge className="bg-yellow-500/30 text-yellow-100 border-none">
+                  <Clock className="h-3 w-3 mr-1" />
+                  Eligible: {stats.nextEligible}
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {/* Availability Status */}
+          <div className="flex items-center gap-3">
+            <div className={`text-center px-5 py-3 rounded-2xl backdrop-blur-sm border ${stats.available ? 'bg-emerald-500/20 border-emerald-300/30' : 'bg-gray-500/20 border-gray-300/30'}`}>
+              <div className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center shadow-lg mb-1.5 ${stats.available ? 'bg-emerald-500 shadow-emerald-500/30' : 'bg-gray-500 shadow-gray-500/30'}`}>
+                {stats.available ? (
+                  <CheckCircle2 className="h-5 w-5 text-white" />
+                ) : (
+                  <XCircle className="h-5 w-5 text-white" />
+                )}
+              </div>
+              <p className={`text-xs font-semibold uppercase tracking-wide ${stats.available ? 'text-emerald-100' : 'text-gray-200'}`}>
+                {stats.available ? 'Available' : 'Unavailable'}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard
-          title="Blood Group"
-          value={user?.blood_group || 'N/A'}
-          icon={<Droplet className="h-5 w-5 text-red-500" />}
-          color="red"
-        />
-        <StatCard
-          title="Total Donations"
-          value={totalDonations.toString()}
-          icon={<Heart className="h-5 w-5 text-green-500" />}
-          color="green"
-        />
-        <StatCard
-          title="Last Donation"
-          value={stats.lastDonation === 'Never' ? 'Never' : stats.lastDonation}
-          icon={<Calendar className="h-5 w-5 text-blue-500" />}
-          color="blue"
-        />
-        <StatCard
-          title="Lives Saved"
-          value={impactValue.toString()}
-          icon={<Award className="h-5 w-5 text-purple-500" />}
-          color="purple"
-        />
+        {/* Blood Group */}
+        <Card className="relative overflow-hidden group hover:shadow-lg hover:shadow-red-500/10 transition-shadow border-0 bg-gradient-to-br from-white to-red-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Blood Group</p>
+                <p className="text-2xl font-bold text-gray-900 mt-0.5">{user?.blood_group || 'N/A'}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">your type</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/25 group-hover:scale-110 transition-transform">
+                <Droplet className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-red-500 to-rose-400"></div>
+        </Card>
+
+        {/* Total Donations */}
+        <Card className="relative overflow-hidden group hover:shadow-lg hover:shadow-emerald-500/10 transition-shadow border-0 bg-gradient-to-br from-white to-emerald-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Total Donations</p>
+                <p className="text-2xl font-bold text-gray-900 mt-0.5">{totalDonations}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">lifetime count</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/25 group-hover:scale-110 transition-transform">
+                <Heart className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-500 to-teal-400"></div>
+        </Card>
+
+        {/* Last Donation */}
+        <Card className="relative overflow-hidden group hover:shadow-lg hover:shadow-blue-500/10 transition-shadow border-0 bg-gradient-to-br from-white to-blue-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Last Donation</p>
+                <p className="text-lg font-bold text-gray-900 mt-0.5">
+                  {stats.lastDonation === 'Never' ? 'Never' : stats.lastDonation}
+                </p>
+                <p className="text-[11px] text-gray-400 mt-0.5">most recent</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/25 group-hover:scale-110 transition-transform">
+                <Calendar className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-500 to-indigo-400"></div>
+        </Card>
+
+        {/* Lives Saved */}
+        <Card className="relative overflow-hidden group hover:shadow-lg hover:shadow-purple-500/10 transition-shadow border-0 bg-gradient-to-br from-white to-purple-50/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Lives Saved</p>
+                <p className="text-2xl font-bold text-purple-600 mt-0.5">{impactValue}</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">your impact</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/25 group-hover:scale-110 transition-transform">
+                <Award className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </CardContent>
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 to-violet-400"></div>
+        </Card>
       </div>
 
       {/* Availability Status Card */}
-      <Card className={`overflow-hidden transition-all ${stats.available ? 'border-green-200' : 'border-gray-200'}`}>
-        <CardContent className="p-0">
-          <div className={`p-4 ${stats.available ? 'bg-green-50' : 'bg-gray-50'}`}>
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <div className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${stats.available ? 'bg-green-100' : 'bg-gray-200'}`}>
-                  {stats.available ? (
-                    <Shield className="h-6 w-6 text-green-600" />
-                  ) : (
-                    <Clock className="h-6 w-6 text-gray-500" />
-                  )}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {stats.available ? 'Available for Donation' : 'Currently Unavailable'}
-                  </p>
-                  <p className="text-sm text-gray-500">
-                    {stats.available
-                      ? 'You will receive donation requests from nearby hospitals'
-                      : 'You will not receive any donation requests'}
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={toggleAvailability}
-                disabled={toggling}
-                className={stats.available ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-500 hover:bg-gray-600'}
-              >
-                {toggling ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Updating...
-                  </>
-                ) : stats.available ? (
-                  'Set Unavailable'
+      <Card className={`overflow-hidden transition-all border-0 shadow-sm ${stats.available ? 'bg-gradient-to-r from-emerald-50 to-teal-50/50' : 'bg-gradient-to-r from-gray-50 to-gray-100/50'}`}>
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${stats.available ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25' : 'bg-gradient-to-br from-gray-400 to-gray-500 shadow-gray-500/25'}`}>
+                {stats.available ? (
+                  <Shield className="h-6 w-6 text-white" />
                 ) : (
-                  'Set Available'
+                  <Clock className="h-6 w-6 text-white" />
                 )}
-              </Button>
+              </div>
+              <div>
+                <p className="font-semibold text-gray-900">
+                  {stats.available ? 'Available for Donation' : 'Currently Unavailable'}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {stats.available
+                    ? 'You will receive donation requests from nearby hospitals'
+                    : 'You will not receive any donation requests'}
+                </p>
+              </div>
             </div>
+            <Button
+              onClick={toggleAvailability}
+              disabled={toggling}
+              className={`h-11 rounded-xl font-semibold ${stats.available ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:opacity-90 shadow-lg shadow-emerald-500/25' : 'bg-gradient-to-r from-gray-500 to-gray-600 hover:opacity-90 shadow-lg shadow-gray-500/25'}`}
+            >
+              {toggling ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : stats.available ? (
+                <>
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Set Unavailable
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Set Available
+                </>
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
 
       {/* Quick Actions Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <QuickAction
           href="/dashboard/donor/donations"
           icon={<Gift className="h-6 w-6 text-red-500" />}
@@ -254,39 +340,33 @@ const requestsResponse = await fetch(
         />
         <QuickAction
           href="/dashboard/donor/history"
-          icon={<Clock className="h-6 w-6 text-blue-500" />}
+          icon={<History className="h-6 w-6 text-blue-500" />}
           label="History"
           subLabel="Past donations"
           color="blue"
         />
         <QuickAction
-          href="/find-donor"
-          icon={<MapPin className="h-6 w-6 text-purple-500" />}
+          href="/dashboard/donor/find-donors"
+          icon={<Search className="h-6 w-6 text-purple-500" />}
           label="Find Donors"
           subLabel="Search nearby"
           color="purple"
-        />
-        <QuickAction
-          href="/dashboard/donor/alerts"
-          icon={<Bell className="h-6 w-6 text-orange-500" />}
-          label="Alerts"
-          subLabel="Emergency"
-          color="orange"
-          badge={recentRequests.length > 0 ? recentRequests.length : undefined}
         />
       </div>
 
       {/* Recent Emergency Requests */}
       {recentRequests.length > 0 && (
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
+        <Card className="border-0 shadow-sm overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Bell className="h-4 w-4 text-red-500" />
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/20">
+                  <Bell className="h-4 w-4 text-white" />
+                </div>
                 <h3 className="font-semibold text-gray-900">Emergency Requests Near You</h3>
               </div>
-              <Link href="/find-donor">
-                <Button variant="ghost" size="sm" className="text-red-600 gap-1">
+              <Link href="/dashboard/donor/alerts">
+                <Button variant="ghost" size="sm" className="text-red-600 gap-1 hover:bg-red-50">
                   View All
                   <ChevronRight className="h-3 w-3" />
                 </Button>
@@ -294,17 +374,20 @@ const requestsResponse = await fetch(
             </div>
             <div className="space-y-2">
               {recentRequests.slice(0, 2).map((request) => (
-                <div key={request.id} className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-100">
+                <div key={request.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100 hover:bg-red-100/70 transition-colors">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
-                      <Droplet className="h-4 w-4 text-red-500" />
+                    <div className="w-9 h-9 bg-gradient-to-br from-red-500 to-rose-600 rounded-xl flex items-center justify-center shadow-md shadow-red-500/20">
+                      <Droplet className="h-4 w-4 text-white" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">Blood {request.blood_group}</p>
-                      <p className="text-xs text-gray-500">{request.hospital}</p>
+                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                        <Building2 className="h-3 w-3" />
+                        {request.hospital}
+                      </p>
                     </div>
                   </div>
-                  <Badge className={request.priority === 'critical' ? 'bg-red-600' : 'bg-orange-500'}>
+                  <Badge className={request.priority === 'critical' ? 'bg-red-600 text-white animate-pulse' : 'bg-orange-500 text-white'}>
                     {request.priority === 'critical' ? '🚨 URGENT' : request.priority.toUpperCase()}
                   </Badge>
                 </div>
@@ -315,15 +398,15 @@ const requestsResponse = await fetch(
       )}
 
       {/* Impact Message */}
-      <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-100">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center animate-pulse">
-              <Heart className="h-5 w-5 text-red-500" />
+      <Card className="border-0 bg-gradient-to-br from-red-50 via-orange-50/50 to-transparent shadow-sm overflow-hidden">
+        <CardContent className="p-5">
+          <div className="flex items-center gap-4">
+            <div className="flex-shrink-0 w-11 h-11 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/25 animate-pulse">
+              <HeartPulse className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="font-medium text-gray-900 text-sm">Your Impact Matters</p>
-              <p className="text-xs text-gray-600">
+              <p className="font-semibold text-gray-900 text-sm">Your Impact Matters</p>
+              <p className="text-sm text-gray-600 mt-0.5">
                 You've helped save <span className="font-bold text-red-600">{impactValue}</span> lives through your{' '}
                 <span className="font-bold text-red-600">{totalDonations}</span> donation(s).
                 Thank you for being a hero! 🦸
@@ -337,44 +420,17 @@ const requestsResponse = await fetch(
 }
 
 // Helper Components
-function StatCard({ title, value, icon, color }: { title: string; value: string; icon: React.ReactNode; color: string }) {
-  const colors = {
-    red: 'border-l-red-500 bg-red-50',
-    green: 'border-l-green-500 bg-green-50',
-    blue: 'border-l-blue-500 bg-blue-50',
-    purple: 'border-l-purple-500 bg-purple-50'
-  };
-
-  return (
-    <Card className={`border-l-4 ${colors[color as keyof typeof colors]} hover:shadow-md transition-shadow`}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            <p className="text-xs text-gray-500">{title}</p>
-          </div>
-          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colors[color as keyof typeof colors]}`}>
-            {icon}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function QuickAction({ href, icon, label, subLabel, color, badge }: { 
+function QuickAction({ href, icon, label, subLabel, color }: { 
   href: string; 
   icon: React.ReactNode; 
   label: string; 
   subLabel: string; 
   color: string;
-  badge?: number;
 }) {
   const colors = {
     red: 'bg-red-100 hover:bg-red-200',
     blue: 'bg-blue-100 hover:bg-blue-200',
-    purple: 'bg-purple-100 hover:bg-purple-200',
-    orange: 'bg-orange-100 hover:bg-orange-200'
+    purple: 'bg-purple-100 hover:bg-purple-200'
   };
 
   return (
@@ -385,11 +441,6 @@ function QuickAction({ href, icon, label, subLabel, color, badge }: {
         </div>
         <p className="font-medium text-gray-900 text-sm">{label}</p>
         <p className="text-xs text-gray-400 mt-1">{subLabel}</p>
-        {badge && (
-          <Badge className="absolute -top-1 -right-1 h-5 min-w-[20px] bg-red-600 text-white text-xs flex items-center justify-center">
-            {badge}
-          </Badge>
-        )}
       </div>
     </Link>
   );
