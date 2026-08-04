@@ -46,6 +46,7 @@ export default function FindDonorsPage() {
   const [loading, setLoading] = useState(false);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [selectedDonor, setSelectedDonor] = useState<any>(null);
+  const [requestedDonorIds, setRequestedDonorIds] = useState<string[]>([]);
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'available' | 'unavailable'>('all');
 
   // Load divisions once on mount
@@ -131,6 +132,11 @@ export default function FindDonorsPage() {
     setSearchPerformed(false);
     setFilteredDonors([]);
     setSelectedDonor(null);
+  };
+
+  // Mark a donor as requested so the button stays disabled with "Requested" text
+  const handleDonorRequested = (donorId: string) => {
+    setRequestedDonorIds(prev => prev.includes(donorId) ? prev : [...prev, donorId]);
   };
 
   const getEligibilityStatus = (lastDonationDate: string) => {
@@ -318,6 +324,7 @@ export default function FindDonorsPage() {
                   donor={donor}
                   isSelected={selectedDonor?.donor_id === donor.donor_id}
                   onSelect={() => setSelectedDonor(donor)}
+                  isRequested={requestedDonorIds.includes(donor.donor_id)}
                 />
               ))}
             </div>
@@ -332,6 +339,8 @@ export default function FindDonorsPage() {
             <DonorDetails
               donor={selectedDonor}
               getEligibilityStatus={getEligibilityStatus}
+              requestedDonorIds={requestedDonorIds}
+              onRequested={handleDonorRequested}
             />
           )}
         </DialogContent>
@@ -341,7 +350,7 @@ export default function FindDonorsPage() {
 }
 
 // Donor Card Component
-function DonorCard({ donor, isSelected, onSelect }: any) {
+function DonorCard({ donor, isSelected, onSelect, isRequested }: any) {
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-600 bg-green-50';
     if (score >= 70) return 'text-yellow-600 bg-yellow-50';
@@ -378,6 +387,12 @@ function DonorCard({ donor, isSelected, onSelect }: any) {
                     Unavailable
                   </Badge>
                 )}
+                {isRequested && (
+                  <Badge className="bg-emerald-100 text-emerald-700">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Requested
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -408,10 +423,11 @@ function DonorCard({ donor, isSelected, onSelect }: any) {
 }
 
 // Donor Details Component
-function DonorDetails({ donor, getEligibilityStatus }: any) {
+function DonorDetails({ donor, getEligibilityStatus, requestedDonorIds, onRequested }: any) {
   const router = useRouter();
   const { user, token } = useAuth();
   const [requesting, setRequesting] = useState(false);
+  const requested = requestedDonorIds?.includes(donor.donor_id) || false;
 
   // Send a targeted donation request to this donor
   const handleRequestBlood = async () => {
@@ -434,7 +450,7 @@ function DonorDetails({ donor, getEligibilityStatus }: any) {
           donor_id: donor.donor_id,
           blood_group: donor.blood_group,
           units_needed: 1,
-          hospital_name: user.city || 'Local Hospital',
+          hospital_name: [user.district, user.division].filter(Boolean).join(', ') || 'Local Hospital',
           location_lat: user?.location_lat || 23.8103,
           location_lng: user?.location_lng || 90.4125,
           division: user?.division || '',
@@ -447,6 +463,8 @@ function DonorDetails({ donor, getEligibilityStatus }: any) {
       const data = await response.json();
 
       if (response.ok) {
+        // Mark this donor as requested so the button becomes disabled with "Requested" text
+        onRequested?.(donor.donor_id);
         toast.success('Donation request sent! The donor will be notified.');
       } else {
         toast.error(data.error || 'Failed to send donation request');
@@ -504,9 +522,14 @@ function DonorDetails({ donor, getEligibilityStatus }: any) {
           type="button"
           className="w-full bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 hover:opacity-90 shadow-lg shadow-red-500/30 cursor-pointer hover:scale-[1.01] transition-transform"
           onClick={handleRequestBlood}
-          disabled={requesting}
+          disabled={requesting || requested}
         >
-          {requesting ? (
+          {requested ? (
+            <>
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Requested
+            </>
+          ) : requesting ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Sending Request...

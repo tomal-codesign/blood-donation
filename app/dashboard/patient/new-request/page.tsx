@@ -1,7 +1,7 @@
 // app/dashboard/patient/new-request/page.tsx
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import api from '@/lib/api';
@@ -17,18 +17,23 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
   Loader2,
   Droplet,
-  Hospital,
   MapPin,
   Phone,
   User,
   AlertCircle,
-  Calendar,
-  CheckCircle
+  CheckCircle,
+  Sparkles,
+  ShieldCheck,
+  Building2,
+  AlertTriangle,
+  Activity,
+  Info,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -36,7 +41,12 @@ export default function NewRequestPage() {
   return (
     <Suspense fallback={
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        <div className="relative">
+          <div className="absolute inset-0 bg-red-200/50 rounded-full blur-xl animate-pulse"></div>
+          <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-red-500 via-rose-500 to-orange-400 flex items-center justify-center shadow-lg shadow-red-500/30">
+            <Droplet className="h-8 w-8 text-white animate-bounce" />
+          </div>
+        </div>
       </div>
     }>
       <NewRequestContent />
@@ -49,12 +59,16 @@ function NewRequestContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [divisions, setDivisions] = useState<{ id: string; name: string }[]>([]);
+  const [districts, setDistricts] = useState<{ id: string; name: string }[]>([]);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
   const [formData, setFormData] = useState({
     blood_group: searchParams?.get('blood_group') || '',
     units_needed: 1,
     priority: 'normal',
     hospital_name: '',
-    city: '',
+    division: '',
+    district: '',
     patient_condition: '',
     contact_phone: '',
     location_lat: 23.8103,
@@ -62,8 +76,36 @@ function NewRequestContent() {
   });
 
   const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-  const cities = ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barishal', 'Rangpur', 'Mymensingh'];
-  const priorities = ['normal', 'moderate', 'critical'];
+
+  // Load divisions once on mount
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/divisions`)
+      .then(res => res.json())
+      .then(data => setDivisions(data.divisions || []))
+      .catch(() => toast.error('Failed to load divisions'));
+  }, []);
+
+  // Load districts when the selected division changes
+  useEffect(() => {
+    if (!formData.division) {
+      setDistricts([]);
+      setFormData(prev => ({ ...prev, district: '' }));
+      return;
+    }
+
+    setLoadingDistricts(true);
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/divisions/${encodeURIComponent(formData.division)}/districts`)
+      .then(res => res.json())
+      .then(data => setDistricts(data.districts || []))
+      .catch(() => toast.error('Failed to load districts'))
+      .finally(() => setLoadingDistricts(false));
+  }, [formData.division]);
+
+  const priorityInfo: Record<string, { label: string; icon: any; chip: string }> = {
+    normal: { label: 'Normal', icon: ShieldCheck, chip: 'bg-blue-50 text-blue-700 border-blue-200' },
+    moderate: { label: 'Moderate', icon: Activity, chip: 'bg-orange-50 text-orange-700 border-orange-200' },
+    critical: { label: 'Critical', icon: AlertTriangle, chip: 'bg-red-50 text-red-700 border-red-200' },
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,8 +119,12 @@ function NewRequestContent() {
       toast.error('Please enter hospital name');
       return;
     }
-    if (!formData.city) {
-      toast.error('Please select a city');
+    if (!formData.division) {
+      toast.error('Please select a division');
+      return;
+    }
+    if (!formData.district) {
+      toast.error('Please select a district');
       return;
     }
     if (!formData.contact_phone) {
@@ -117,37 +163,59 @@ function NewRequestContent() {
     }
   };
 
+  const isCriticalCondition =
+    formData.patient_condition?.toLowerCase().includes('surgery') ||
+    formData.patient_condition?.toLowerCase().includes('accident') ||
+    formData.patient_condition?.toLowerCase().includes('emergency');
+
+  const inputClass = "mt-1.5 h-11 rounded-xl border-gray-200 bg-white focus:border-red-400 focus:ring-red-400/20";
+
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard/patient/requests">
-          <Button variant="ghost" size="sm" className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to My Requests
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">New Blood Request</h1>
-          <p className="text-gray-500 text-sm">Request blood for yourself or a patient</p>
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-600 via-rose-600 to-orange-500 p-6 sm:p-8 shadow-xl shadow-red-500/20">
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full"></div>
+        <div className="absolute -bottom-16 -left-8 w-48 h-48 bg-white/5 rounded-full"></div>
+        <div className="absolute top-4 right-24 w-12 h-12 bg-white/10 rounded-xl rotate-12"></div>
+
+        <div className="relative flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-xs font-semibold mb-2">
+              <Sparkles className="h-3.5 w-3.5" />
+              Request Blood
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-white">New Blood Request</h1>
+            <p className="text-red-50 mt-1.5 text-sm sm:text-base max-w-md">
+              Request blood for yourself or a patient. Donors in your area will be notified.
+            </p>
+          </div>
+
+          <Link href="/dashboard/patient/requests">
+            <Button variant="outline" className="bg-white/15 backdrop-blur-sm border-white/30 text-white hover:bg-white/25 hover:text-white">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to My Requests
+            </Button>
+          </Link>
         </div>
       </div>
 
       {/* Form Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Droplet className="h-5 w-5 text-red-600" />
-            Request Details
+      <Card className="overflow-hidden border-0 shadow-lg shadow-gray-900/5">
+        <CardHeader className="bg-gradient-to-r from-red-50/50 to-transparent border-b border-gray-100">
+          <CardTitle className="flex items-center gap-2 text-base text-gray-900">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/20">
+              <Droplet className="h-4 w-4 text-white" />
+            </div>
+            Blood Request Details
           </CardTitle>
           <CardDescription>
-            Fill in the details below to request blood. All fields marked with * are required.
+            Fill in the details below. Donors matching your blood group and location will be notified.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-5 sm:p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Blood Group & Units */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="blood_group" className="text-sm font-semibold">
                   Blood Group <span className="text-red-500">*</span>
@@ -157,7 +225,8 @@ function NewRequestContent() {
                   value={formData.blood_group}
                   onValueChange={(value) => setFormData({ ...formData, blood_group: value })}
                 >
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger className={`${inputClass} ${formData.blood_group ? 'border-red-200 bg-red-50/30' : ''}`}>
+                    <Droplet className={`h-4 w-4 mr-2 ${formData.blood_group ? 'text-red-500' : 'text-gray-400'}`} />
                     <SelectValue placeholder="Select blood group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -176,187 +245,158 @@ function NewRequestContent() {
                   id="units_needed"
                   type="number"
                   min="1"
-                  max="10"
+                  max="5"
                   required
                   value={formData.units_needed}
                   onChange={(e) => setFormData({ ...formData, units_needed: parseInt(e.target.value) })}
-                  className="mt-1"
+                  className={`${inputClass} pl-10`}
                 />
-                <p className="text-xs text-gray-400 mt-1">Maximum 10 units per request</p>
+                <p className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                  <Info className="h-3 w-3" />
+                  Max 5 units per request
+                </p>
               </div>
             </div>
 
-            {/* Priority & City */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Priority */}
+            <div>
+              <Label htmlFor="priority" className="text-sm font-semibold">
+                Priority <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                required
+                value={formData.priority}
+                onValueChange={(value) => setFormData({ ...formData, priority: value })}
+              >
+                <SelectTrigger className={inputClass}>
+                  <AlertCircle className="h-4 w-4 text-gray-400 mr-2" />
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">🔵 Normal</SelectItem>
+                  <SelectItem value="moderate">🟠 Moderate</SelectItem>
+                  <SelectItem value="critical">🔴 Critical (Emergency)</SelectItem>
+                </SelectContent>
+              </Select>
+              {isCriticalCondition && (
+                <div className="mt-2 flex items-center gap-2 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700">
+                  <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>"Surgery/Accident/Emergency" detected — this will be marked <strong>CRITICAL</strong> automatically</span>
+                </div>
+              )}
+            </div>
+
+            {/* Location */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="priority" className="text-sm font-semibold">
-                  Priority <span className="text-red-500">*</span>
+                <Label htmlFor="division" className="text-sm font-semibold">
+                  Division <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   required
-                  value={formData.priority}
-                  onValueChange={(value) => setFormData({ ...formData, priority: value })}
+                  value={formData.division}
+                  onValueChange={(value) => setFormData({ ...formData, division: value, district: '' })}
                 >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select priority" />
+                  <SelectTrigger className={inputClass}>
+                    <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                    <SelectValue placeholder="Select division" />
                   </SelectTrigger>
                   <SelectContent>
-                    {priorities.map((p) => (
-                      <SelectItem key={p} value={p}>
-                        {p === 'critical' && '🔴 '}
-                        {p === 'moderate' && '🟠 '}
-                        {p === 'normal' && '🔵 '}
-                        {p.charAt(0).toUpperCase() + p.slice(1)}
-                      </SelectItem>
+                    {divisions.map((division) => (
+                      <SelectItem key={division.id} value={division.name}>{division.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div>
-                <Label htmlFor="city" className="text-sm font-semibold">
-                  City <span className="text-red-500">*</span>
+                <Label htmlFor="district" className="text-sm font-semibold">
+                  District <span className="text-red-500">*</span>
                 </Label>
                 <Select
                   required
-                  value={formData.city}
-                  onValueChange={(value) => setFormData({ ...formData, city: value })}
+                  value={formData.district}
+                  onValueChange={(value) => setFormData({ ...formData, district: value })}
+                  disabled={!formData.division || loadingDistricts}
                 >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select city" />
+                  <SelectTrigger className={`${inputClass} ${!formData.division ? 'opacity-50' : ''}`}>
+                    <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+                    <SelectValue placeholder={!formData.division ? 'Select division first' : loadingDistricts ? 'Loading...' : 'Select district'} />
                   </SelectTrigger>
                   <SelectContent>
-                    {cities.map((city) => (
-                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.name}>{district.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Hospital Name */}
-            <div>
-              <Label htmlFor="hospital_name" className="text-sm font-semibold">
-                Hospital Name <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative mt-1">
-                <Hospital className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="hospital_name"
-                  placeholder="Enter hospital name"
-                  required
-                  value={formData.hospital_name}
-                  onChange={(e) => setFormData({ ...formData, hospital_name: e.target.value })}
-                  className="pl-10"
-                />
+            {/* Hospital & Contact */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="hospital_name" className="text-sm font-semibold">
+                  Hospital Name <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative mt-1.5">
+                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="hospital_name"
+                    placeholder="Enter hospital name"
+                    required
+                    value={formData.hospital_name}
+                    onChange={(e) => setFormData({ ...formData, hospital_name: e.target.value })}
+                    className={`${inputClass} pl-10`}
+                  />
+                </div>
               </div>
-            </div>
 
-            {/* Contact Phone */}
-            <div>
-              <Label htmlFor="contact_phone" className="text-sm font-semibold">
-                Contact Phone <span className="text-red-500">*</span>
-              </Label>
-              <div className="relative mt-1">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  id="contact_phone"
-                  placeholder="Enter phone number"
-                  required
-                  value={formData.contact_phone}
-                  onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
-                  className="pl-10"
-                />
+              <div>
+                <Label htmlFor="contact_phone" className="text-sm font-semibold">
+                  Contact Phone <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative mt-1.5">
+                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="contact_phone"
+                    placeholder="Enter phone number"
+                    required
+                    value={formData.contact_phone}
+                    onChange={(e) => setFormData({ ...formData, contact_phone: e.target.value })}
+                    className={`${inputClass} pl-10`}
+                  />
+                </div>
               </div>
             </div>
 
             {/* Patient Condition */}
             <div>
               <Label htmlFor="patient_condition" className="text-sm font-semibold">
-                Patient Condition <span className="text-gray-400 text-xs">(Optional)</span>
+                Patient Condition <span className="text-gray-400 text-xs font-normal">(Optional)</span>
               </Label>
-              <div className="relative mt-1">
+              <div className="relative mt-1.5">
                 <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Textarea
                   id="patient_condition"
                   placeholder="Describe patient's condition (e.g., Surgery, Accident, Emergency)"
                   value={formData.patient_condition}
                   onChange={(e) => setFormData({ ...formData, patient_condition: e.target.value })}
-                  className="pl-10 min-h-[100px]"
+                  className="pl-10 min-h-[90px] rounded-xl border-gray-200 focus:border-red-400 focus:ring-red-400/20"
                   rows={3}
                 />
-              </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {formData.patient_condition?.toLowerCase().includes('surgery') || 
-                 formData.patient_condition?.toLowerCase().includes('accident') ||
-                 formData.patient_condition?.toLowerCase().includes('emergency')
-                  ? '⚠️ This will be automatically set to CRITICAL priority'
-                  : 'Provide details for better assistance'}
-              </p>
-            </div>
-
-            {/* Location Info (Hidden) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-              <div>
-                <Label>Latitude</Label>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  value={formData.location_lat}
-                  onChange={(e) => setFormData({ ...formData, location_lat: parseFloat(e.target.value) })}
-                />
-              </div>
-              <div>
-                <Label>Longitude</Label>
-                <Input
-                  type="number"
-                  step="0.0001"
-                  value={formData.location_lng}
-                  onChange={(e) => setFormData({ ...formData, location_lng: parseFloat(e.target.value) })}
-                />
-              </div>
-            </div>
-
-            {/* Summary */}
-            <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-              <h4 className="font-semibold text-gray-900 text-sm mb-2 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-blue-500" />
-                Request Summary
-              </h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div>
-                  <span className="text-gray-500">Blood Group:</span>
-                  <span className="font-medium ml-1">{formData.blood_group || 'Not selected'}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Units:</span>
-                  <span className="font-medium ml-1">{formData.units_needed}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">Priority:</span>
-                  <span className="font-medium ml-1 capitalize">{formData.priority || 'Not selected'}</span>
-                </div>
-                <div>
-                  <span className="text-gray-500">City:</span>
-                  <span className="font-medium ml-1">{formData.city || 'Not selected'}</span>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-gray-500">Hospital:</span>
-                  <span className="font-medium ml-1">{formData.hospital_name || 'Not entered'}</span>
-                </div>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t">
-              <Link href="/dashboard/patient/requests" className="flex-1">
-                <Button type="button" variant="outline" className="w-full">
+            <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100">
+              <Link href="/dashboard/patient/requests" className="sm:w-1/3">
+                <Button type="button" variant="outline" className="w-full h-11 rounded-xl border-gray-200 hover:border-red-200 hover:text-red-600">
                   Cancel
                 </Button>
               </Link>
               <Button
                 type="submit"
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                className="flex-1 h-11 rounded-xl bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 shadow-lg shadow-red-500/25 font-semibold"
                 disabled={loading}
               >
                 {loading ? (
@@ -376,25 +416,49 @@ function NewRequestContent() {
         </CardContent>
       </Card>
 
-      {/* Tips Card */}
-      <Card className="bg-blue-50 border-blue-200">
+      {/* Priority Legend */}
+      <Card className="border-0 bg-gradient-to-br from-blue-50 via-sky-50/50 to-transparent shadow-sm overflow-hidden">
         <CardContent className="p-4">
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-              <Droplet className="h-4 w-4 text-blue-600" />
+            <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <Info className="h-4 w-4 text-white" />
             </div>
-            <div>
-              <h4 className="font-semibold text-blue-800 text-sm">💡 Tips for Requesting Blood</h4>
-              <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                <li>• Provide accurate blood group and units needed</li>
-                <li>• Choose correct priority based on urgency</li>
-                <li>• Include patient condition for better matching</li>
-                <li>• Keep contact phone active for donor communication</li>
-              </ul>
+            <div className="flex-1">
+              <h4 className="font-semibold text-blue-800 text-sm">Priority Guide</h4>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <Badge className="border bg-blue-50 text-blue-700 border-blue-200">
+                  <ShieldCheck className="h-3 w-3 mr-1" />
+                  Normal — routine request
+                </Badge>
+                <Badge className="border bg-orange-50 text-orange-700 border-orange-200">
+                  <Activity className="h-3 w-3 mr-1" />
+                  Moderate — needs attention soon
+                </Badge>
+                <Badge className="border bg-red-50 text-red-700 border-red-200">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Critical — emergency help needed
+                </Badge>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Location Info (Hidden) */}
+      <div className="hidden">
+        <Input
+          type="number"
+          step="0.0001"
+          value={formData.location_lat}
+          onChange={(e) => setFormData({ ...formData, location_lat: parseFloat(e.target.value) })}
+        />
+        <Input
+          type="number"
+          step="0.0001"
+          value={formData.location_lng}
+          onChange={(e) => setFormData({ ...formData, location_lng: parseFloat(e.target.value) })}
+        />
+      </div>
     </div>
   );
 }
