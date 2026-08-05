@@ -211,6 +211,27 @@ export default function FindDonorPage() {
               </div>
             </div>
 
+            {/* Availability Filter */}
+            <div className="mt-6">
+              <Label className="text-sm font-medium mb-2 block">Availability</Label>
+              <div className="flex gap-2">
+                {(['all', 'available', 'unavailable'] as const).map((filter) => (
+                  <Button
+                    key={filter}
+                    type="button"
+                    size="sm"
+                    variant={availabilityFilter === filter ? 'default' : 'outline'}
+                    className={availabilityFilter === filter
+                      ? 'bg-gradient-to-r from-red-500 to-rose-600 hover:opacity-90 shadow-md shadow-red-500/20'
+                      : 'text-gray-600 hover:text-gray-900'}
+                    onClick={() => setAvailabilityFilter(filter)}
+                  >
+                    {filter === 'all' ? 'All' : filter === 'available' ? 'Available' : 'Unavailable'}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             <div className="flex gap-3 mt-6">
               <Button type="button" onClick={handleSearch} className="flex-1 bg-gradient-to-r from-red-500 via-pink-500 to-orange-500 hover:opacity-90 shadow-lg shadow-red-500/30 cursor-pointer hover:scale-[1.01] transition-transform" disabled={loading}>
                 {loading ? (
