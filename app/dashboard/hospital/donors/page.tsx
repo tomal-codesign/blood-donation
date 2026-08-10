@@ -44,7 +44,8 @@ interface Donor {
   full_name: string;
   email: string;
   phone: string;
-  city: string;
+  division: string;
+  district: string;
   blood_group: string;
   is_available: boolean;
   total_donations: number;
@@ -94,7 +95,8 @@ export default function HospitalDonorsPage() {
             full_name: 'Rahman Ahmed',
             email: 'rahman@example.com',
             phone: '01712345678',
-            city: 'Dhaka',
+            division: 'Dhaka',
+            district: 'Dhaka',
             blood_group: 'O+',
             is_available: true,
             total_donations: 5,
@@ -108,7 +110,8 @@ export default function HospitalDonorsPage() {
             full_name: 'Fatema Begum',
             email: 'fatema@example.com',
             phone: '01812345678',
-            city: 'Dhaka',
+            division: 'Dhaka',
+            district: 'Dhaka',
             blood_group: 'A+',
             is_available: true,
             total_donations: 3,
@@ -386,43 +389,49 @@ export default function HospitalDonorsPage() {
             const TierIcon = tier.icon;
             const isAvailable = donor.is_available;
 
+            const location = [donor.district, donor.division].filter(Boolean).join(', ') || 'Location N/A';
+
             return (
               <Card
                 key={donor.id}
-                className={`group relative overflow-hidden border-0 bg-gradient-to-br from-white to-gray-50/50 hover:shadow-lg hover:shadow-gray-900/5 transition-all duration-300 ${
-                  isAvailable ? 'hover:border-emerald-200' : 'hover:border-gray-200'
+                className={`group relative border-0 bg-white hover:border-blue-200 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-200 overflow-hidden rounded-2xl ${
+                  isAvailable ? 'ring-1 ring-emerald-200/60' : 'ring-1 ring-gray-200/60'
                 }`}
               >
-                <CardContent className="p-5">
-                  {/* Top accent */}
-                  <div className={`absolute top-0 left-0 right-0 h-0.5 ${isAvailable ? 'bg-gradient-to-r from-emerald-400 to-teal-400' : 'bg-gradient-to-r from-gray-300 to-gray-400'}`}></div>
+                {/* Top accent bar */}
+                <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${isAvailable ? 'from-emerald-400 via-teal-400 to-cyan-400' : 'from-gray-300 via-gray-400 to-gray-300'}`}></div>
 
+                <CardContent className="p-4 pt-5">
                   {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
                       {/* Avatar */}
-                      <div className={`relative w-12 h-12 rounded-2xl bg-gradient-to-br ${tier.color} flex items-center justify-center shadow-lg flex-shrink-0`}>
+                      <div className={`relative flex-shrink-0 w-12 h-12 rounded-xl bg-gradient-to-br ${tier.color} flex items-center justify-center shadow-md`}>
                         <span className="text-white font-bold text-lg">
                           {donor.full_name?.charAt(0)?.toUpperCase() || 'U'}
                         </span>
                         {isAvailable && (
-                          <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full ring-2 ring-white"></span>
+                          <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full ring-2 ring-white"></span>
                         )}
                       </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900 leading-tight">
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-gray-900 text-sm leading-tight truncate">
                           {donor.full_name || 'Unknown'}
                         </h3>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <TierIcon className="h-3 w-3 text-amber-500" />
-                          <span className="text-xs text-gray-500">{tier.label}</span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <TierIcon className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                          <span className="text-[11px] text-amber-600 font-medium truncate">{tier.label}</span>
                         </div>
+                        <p className="text-[11px] text-gray-400 mt-0.5 flex items-center gap-1 truncate">
+                          <MapPin className="h-3 w-3 flex-shrink-0" />
+                          <span className="truncate">{location}</span>
+                        </p>
                       </div>
                     </div>
 
                     {/* Donation Count */}
-                    <div className="text-right">
-                      <p className="text-xl font-bold text-blue-600 leading-none">
+                    <div className="flex-shrink-0 text-center">
+                      <p className={`text-xl font-bold leading-none ${isAvailable ? 'text-emerald-600' : 'text-gray-500'}`}>
                         {donor.donation_count || 0}
                       </p>
                       <p className="text-[10px] text-gray-400 mt-0.5">donations</p>
@@ -430,24 +439,24 @@ export default function HospitalDonorsPage() {
                   </div>
 
                   {/* Blood Group & Status */}
-                  <div className="flex items-center gap-2 mb-4 flex-wrap">
-                    <Badge className={`border ${getBloodGroupColor(donor.blood_group)} font-semibold gap-1`}>
+                  <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+                    <Badge className={`border ${getBloodGroupColor(donor.blood_group)} font-bold gap-1 px-2 py-0.5 text-xs`}>
                       <Droplet className="h-3 w-3" />
                       {donor.blood_group || 'N/A'}
                     </Badge>
                     {isAvailable ? (
-                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-semibold gap-1">
+                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 font-semibold gap-1 px-2 py-0.5 text-xs">
                         <CheckCircle2 className="h-3 w-3" />
                         Available
                       </Badge>
                     ) : (
-                      <Badge className="bg-gray-100 text-gray-600 border-gray-200 font-semibold gap-1">
+                      <Badge className="bg-gray-100 text-gray-600 border-gray-200 font-semibold gap-1 px-2 py-0.5 text-xs">
                         <XCircle className="h-3 w-3" />
                         Unavailable
                       </Badge>
                     )}
                     {donor.donated_to_hospital && (
-                      <Badge className="bg-blue-100 text-blue-700 border-blue-200 font-semibold gap-1">
+                      <Badge className="bg-blue-100 text-blue-700 border-blue-200 font-semibold gap-1 px-2 py-0.5 text-xs">
                         <HandHeart className="h-3 w-3" />
                         Donated Here
                       </Badge>
@@ -455,32 +464,29 @@ export default function HospitalDonorsPage() {
                   </div>
 
                   {/* Contact Info */}
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Mail className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                      <span className="truncate">{donor.email || 'N/A'}</span>
+                  <div className="space-y-1.5 rounded-lg bg-gray-50/80 border border-gray-100 px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs min-w-0">
+                      <Mail className="h-3 w-3 text-blue-500 flex-shrink-0" />
+                      <span className="text-gray-600 truncate">{donor.email || 'N/A'}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <Phone className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                      <span>{donor.phone || 'N/A'}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-gray-500">
-                      <MapPin className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
-                      <span>{donor.city || 'N/A'}</span>
+                    <div className="flex items-center gap-2 text-xs min-w-0">
+                      <Phone className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                      <span className="text-gray-600 truncate">{donor.phone || 'N/A'}</span>
                     </div>
                   </div>
 
                   {/* Last Donation */}
                   {donor.last_donation_date && (
-                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                        <Calendar className="h-3 w-3" />
-                        Last donation: {new Date(donor.last_donation_date).toLocaleDateString()}
-                      </div>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400">
-                        <Activity className="h-3 w-3" />
-                        {donor.total_donations || 0} total
-                      </div>
+                    <div className="mt-3 pt-2.5 border-t border-gray-100 flex items-center justify-between text-[11px]">
+                      <span className="text-gray-400 flex items-center gap-1 min-w-0 truncate">
+                        <Calendar className="h-3 w-3 text-red-400 flex-shrink-0" />
+                        <span className="font-medium text-gray-500 flex-shrink-0">Last:</span>
+                        <span className="truncate">{new Date(donor.last_donation_date).toLocaleDateString()}</span>
+                      </span>
+                      <span className="text-gray-400 flex items-center gap-1 flex-shrink-0 ml-2">
+                        <Activity className="h-3 w-3 text-blue-400" />
+                        <span className="font-medium text-gray-500">{donor.total_donations || 0}</span>
+                      </span>
                     </div>
                   )}
                 </CardContent>

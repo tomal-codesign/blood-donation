@@ -103,8 +103,9 @@ export default function DashboardLayout({
     { name: 'Dashboard', href: '/dashboard/hospital', icon: LayoutDashboard },
     { name: 'Blood Inventory', href: '/dashboard/hospital/inventory', icon: Package },
     { name: 'Blood Requests', href: '/dashboard/hospital/requests', icon: FileText },
-    { name: 'Donor List', href: '/dashboard/hospital/donors', icon: Users },
+    { name: 'New Request', href: '/dashboard/hospital/new-request', icon: PlusCircle },
     { name: 'Find Donors', href: '/dashboard/hospital/find-donors', icon: Search },
+    { name: 'Donor List', href: '/dashboard/hospital/donors', icon: Users },
     { name: 'Analytics', href: '/dashboard/hospital/analytics', icon: TrendingUp },
     { name: 'Profile', href: '/dashboard/hospital/profile', icon: User },
     { name: 'Settings', href: '/dashboard/hospital/settings', icon: Settings }
@@ -152,9 +153,8 @@ export default function DashboardLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-30 w-64 h-full bg-white shadow-xl transform transition-all duration-300 ease-in-out flex flex-col ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 lg:shadow-sm`}
+        className={`fixed top-0 left-0 z-30 w-64 h-full bg-white shadow-xl transform transition-all duration-300 ease-in-out flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          } lg:translate-x-0 lg:shadow-sm`}
       >
         {/* Sidebar Header - Fixed */}
         <div className="flex-shrink-0 bg-white border-b border-gray-100">
@@ -209,15 +209,13 @@ export default function DashboardLayout({
                   key={item.href}
                   href={item.href}
                   onClick={() => setSidebarOpen(false)}
-                  className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                    isActive
-                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md shadow-red-200'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
+                  className={`group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${isActive
+                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md shadow-red-200'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                    }`}
                 >
-                  <Icon className={`h-5 w-5 flex-shrink-0 transition-transform duration-200 ${
-                    isActive ? 'scale-110' : 'group-hover:scale-110'
-                  }`} />
+                  <Icon className={`h-5 w-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-110'
+                    }`} />
                   <span>{item.name}</span>
                   {isActive && (
                     <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white/80" />
