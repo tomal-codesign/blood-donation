@@ -116,7 +116,7 @@ export default function DashboardLayout({
     { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
     { name: 'User Management', href: '/dashboard/admin/users', icon: Users },
     { name: 'Hospitals', href: '/dashboard/admin/hospitals', icon: Building2 },
-    { name: 'Blood Banks', href: '/dashboard/admin/blood-banks', icon: Droplet },
+    // { name: 'Blood Banks', href: '/dashboard/admin/blood-banks', icon: Droplet },
     { name: 'Analytics', href: '/dashboard/admin/analytics', icon: Activity },
     { name: 'AI Monitoring', href: '/dashboard/admin/ai-monitor', icon: Shield },
     { name: 'Reports', href: '/dashboard/admin/reports', icon: BarChart3 },

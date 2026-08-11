@@ -38,9 +38,12 @@ import {
   Edit,
   Trash2,
   Calendar,
-  Users,
-  Droplet,
-  Plus
+  Plus,
+  Sparkles,
+  Shield,
+  AlertTriangle,
+  FileText,
+  KeyRound,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -56,17 +59,6 @@ interface HospitalType {
   verified: boolean;
   created_at: string;
 }
-
-type StatsColorType = 'blue' | 'green' | 'purple' | 'orange' | 'red' | 'yellow';
-
-const statsColors: Record<StatsColorType, string> = {
-  blue: 'bg-blue-50 text-blue-700',
-  green: 'bg-green-50 text-green-700',
-  purple: 'bg-purple-50 text-purple-700',
-  orange: 'bg-orange-50 text-orange-700',
-  red: 'bg-red-50 text-red-700',
-  yellow: 'bg-yellow-50 text-yellow-700'
-};
 
 export default function AdminHospitalsPage() {
   const { token } = useAuth();
@@ -263,281 +255,364 @@ export default function AdminHospitalsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-12 w-12 animate-spin text-purple-600" />
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="relative">
+          <div className="absolute inset-0 bg-purple-200/50 rounded-full blur-xl animate-pulse"></div>
+          <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-400 flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <Hospital className="h-8 w-8 text-white animate-bounce" />
+          </div>
+        </div>
+        <p className="mt-5 text-gray-500 font-medium">Loading hospitals...</p>
+        <div className="mt-3 h-1.5 w-48 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full w-1/2 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full animate-[loading_1s_ease-in-out_infinite]"></div>
+        </div>
+        <style>{`@keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }`}</style>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Hospital Management</h1>
-          <p className="text-gray-500 mt-1">Manage all registered hospitals</p>
-        </div>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={fetchHospitals}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-          
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-purple-600 hover:bg-purple-700 gap-2">
-                <Plus className="h-4 w-4" />
-                Add Hospital
+    <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-6 sm:p-8 shadow-2xl shadow-purple-900/20 border border-white/10">
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-16 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-8 right-1/3 w-2 h-2 bg-white/30 rounded-full"></div>
+        <div className="absolute top-16 right-1/4 w-1.5 h-1.5 bg-purple-300/40 rounded-full"></div>
+        <div className="absolute bottom-12 right-1/2 w-2 h-2 bg-indigo-300/30 rounded-full"></div>
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-white text-xs font-semibold mb-4">
+              <Sparkles className="h-3.5 w-3.5 text-purple-300" />
+              Hospital Management
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              Manage Hospitals
+            </h1>
+            <p className="text-purple-200/80 mt-2 text-sm sm:text-base max-w-lg leading-relaxed">
+              Verify, manage, and monitor all registered hospitals and blood banks.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <Badge className="bg-white/10 text-white border-white/10 backdrop-blur-sm">
+                <Building2 className="h-3 w-3 mr-1.5" />
+                {stats.total} Total
+              </Badge>
+              <Badge className="bg-white/10 text-white border-white/10 backdrop-blur-sm">
+                <CheckCircle className="h-3 w-3 mr-1.5" />
+                {stats.verified} Verified
+              </Badge>
+              <Badge className="bg-white/10 text-white border-white/10 backdrop-blur-sm">
+                <XCircle className="h-3 w-3 mr-1.5" />
+                {stats.unverified} Unverified
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start lg:items-end gap-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={fetchHospitals}
+                className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:text-white transition-all"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="text-2xl font-bold">Add New Hospital</DialogTitle>
-                <DialogDescription>
-                  Create a hospital account directly. The hospital will be able to login and manage their blood bank.
-                </DialogDescription>
-              </DialogHeader>
               
-              <form onSubmit={handleAddHospital} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-semibold">Hospital Name *</Label>
-                    <Input
-                      required
-                      placeholder="Dhaka Medical Hospital"
-                      value={formData.hospital_name}
-                      onChange={(e) => setFormData({...formData, hospital_name: e.target.value})}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-semibold">Email *</Label>
-                    <Input
-                      type="email"
-                      required
-                      placeholder="hospital@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-semibold">Password *</Label>
-                    <Input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="mt-1"
-                    />
-                    <p className="text-xs text-gray-400 mt-1">Minimum 6 characters</p>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-semibold">Phone *</Label>
-                    <Input
-                      required
-                      placeholder="01712345678"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-semibold">City *</Label>
-                    <Select 
-                      value={formData.city} 
-                      onValueChange={(value) => setFormData({...formData, city: value})}
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="Select city" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cities.map(city => (
-                          <SelectItem key={city} value={city}>{city}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label className="text-sm font-semibold">Address</Label>
-                    <Input
-                      placeholder="123, Hospital Road"
-                      value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-semibold">Registration Number</Label>
-                    <Input
-                      placeholder="HOSP-2024-001"
-                      value={formData.registration_number}
-                      onChange={(e) => setFormData({...formData, registration_number: e.target.value})}
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-sm font-semibold">Blood Bank License</Label>
-                    <Input
-                      placeholder="BB-2024-001"
-                      value={formData.blood_bank_license}
-                      onChange={(e) => setFormData({...formData, blood_bank_license: e.target.value})}
-                      className="mt-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-2">
-                  <Checkbox 
-                    id="verified" 
-                    checked={formData.verified}
-                    onCheckedChange={(checked) => setFormData({...formData, verified: checked as boolean})}
-                  />
-                  <Label htmlFor="verified" className="text-sm font-medium cursor-pointer">
-                    Mark as Verified (Hospital can login immediately)
-                  </Label>
-                </div>
-
-                <div className="flex gap-3 pt-4 border-t">
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    className="flex-1"
-                    onClick={() => setDialogOpen(false)}
-                  >
-                    Cancel
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white shadow-lg shadow-purple-500/30 transition-all">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Hospital
                   </Button>
-                  <Button 
-                    type="submit" 
-                    className="flex-1 bg-purple-600 hover:bg-purple-700"
-                    disabled={submitting}
-                  >
-                    {submitting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Create Hospital
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold">Add New Hospital</DialogTitle>
+                    <DialogDescription>
+                      Create a hospital account directly. The hospital will be able to login and manage their blood bank.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <form onSubmit={handleAddHospital} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-semibold">Hospital Name *</Label>
+                        <Input
+                          required
+                          placeholder="Dhaka Medical Hospital"
+                          value={formData.hospital_name}
+                          onChange={(e) => setFormData({...formData, hospital_name: e.target.value})}
+                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold">Email *</Label>
+                        <Input
+                          type="email"
+                          required
+                          placeholder="hospital@example.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({...formData, email: e.target.value})}
+                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-semibold">Password *</Label>
+                        <Input
+                          type="password"
+                          required
+                          placeholder="••••••••"
+                          value={formData.password}
+                          onChange={(e) => setFormData({...formData, password: e.target.value})}
+                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        />
+                        <p className="text-xs text-gray-400 mt-1">Minimum 6 characters</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold">Phone *</Label>
+                        <Input
+                          required
+                          placeholder="01712345678"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-semibold">City *</Label>
+                        <Select 
+                          value={formData.city} 
+                          onValueChange={(value) => setFormData({...formData, city: value})}
+                        >
+                          <SelectTrigger className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20">
+                            <SelectValue placeholder="Select city" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cities.map(city => (
+                              <SelectItem key={city} value={city}>{city}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold">Address</Label>
+                        <Input
+                          placeholder="123, Hospital Road"
+                          value={formData.address}
+                          onChange={(e) => setFormData({...formData, address: e.target.value})}
+                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Label className="text-sm font-semibold">Registration Number</Label>
+                        <Input
+                          placeholder="HOSP-2024-001"
+                          value={formData.registration_number}
+                          onChange={(e) => setFormData({...formData, registration_number: e.target.value})}
+                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-sm font-semibold">Blood Bank License</Label>
+                        <Input
+                          placeholder="BB-2024-001"
+                          value={formData.blood_bank_license}
+                          onChange={(e) => setFormData({...formData, blood_bank_license: e.target.value})}
+                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <Checkbox 
+                        id="verified" 
+                        checked={formData.verified}
+                        onCheckedChange={(checked) => setFormData({...formData, verified: checked as boolean})}
+                      />
+                      <Label htmlFor="verified" className="text-sm font-medium cursor-pointer">
+                        Mark as Verified (Hospital can login immediately)
+                      </Label>
+                    </div>
+
+                    <div className="flex gap-3 pt-4 border-t">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="flex-1 border-gray-200 hover:bg-gray-50"
+                        onClick={() => setDialogOpen(false)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button 
+                        type="submit" 
+                        className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 shadow-lg shadow-purple-500/20"
+                        disabled={submitting}
+                      >
+                        {submitting ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                            Creating...
+                          </>
+                        ) : (
+                          <>
+                            <Plus className="h-4 w-4 mr-2" />
+                            Create Hospital
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-purple-200/60">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              {stats.verified} verified hospitals
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <StatsCard label="Total Hospitals" value={stats.total} color="blue" />
-        <StatsCard label="Verified" value={stats.verified} color="green" />
-        <StatsCard label="Unverified" value={stats.unverified} color="red" />
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatsCard 
+          label="Total Hospitals" 
+          value={stats.total} 
+          icon={<Building2 className="h-5 w-5 text-white" />}
+          iconBg="bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/25"
+          accent="bg-gradient-to-r from-blue-500 to-indigo-400"
+          to="from-white to-blue-50/50"
+        />
+        <StatsCard 
+          label="Verified" 
+          value={stats.verified} 
+          icon={<CheckCircle className="h-5 w-5 text-white" />}
+          iconBg="bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25"
+          accent="bg-gradient-to-r from-emerald-500 to-teal-400"
+          to="from-white to-emerald-50/50"
+        />
+        <StatsCard 
+          label="Unverified" 
+          value={stats.unverified} 
+          icon={<XCircle className="h-5 w-5 text-white" />}
+          iconBg="bg-gradient-to-br from-amber-400 to-orange-500 shadow-amber-500/25"
+          accent="bg-gradient-to-r from-amber-400 to-orange-400"
+          to="from-white to-amber-50/50"
+        />
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Search by hospital name, email or city..."
-            className="pl-9"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="w-48">
-          <select 
-            className="w-full px-4 py-2 border rounded-lg"
-            value={filterVerified}
-            onChange={(e) => setFilterVerified(e.target.value)}
-          >
-            <option value="all">All Hospitals</option>
-            <option value="verified">Verified</option>
-            <option value="unverified">Unverified</option>
-          </select>
-        </div>
-      </div>
+      <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-purple-50/30">
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by hospital name, email or city..."
+                className="pl-9 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-48 relative">
+              <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <select 
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-purple-400 focus:ring-2 focus:ring-purple-400/20 bg-white"
+                value={filterVerified}
+                onChange={(e) => setFilterVerified(e.target.value)}
+              >
+                <option value="all">All Hospitals</option>
+                <option value="verified">Verified</option>
+                <option value="unverified">Unverified</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Hospital List */}
       {filteredHospitals.length === 0 ? (
-        <Card>
+        <Card className="border-0 shadow-sm">
           <CardContent className="text-center py-16">
-            <Hospital className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No hospitals found</p>
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mb-4">
+              <Hospital className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-gray-500 font-medium">No hospitals found</p>
+            <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filter</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
           {filteredHospitals.map((hospital) => (
-            <Card key={hospital.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
+            <Card key={hospital.id} className="border-0 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 overflow-hidden group">
+              <CardContent className="p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-purple-100">
-                      <Building2 className="h-5 w-5 text-purple-600" />
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shrink-0">
+                      <Building2 className="h-6 w-6 text-white" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <p className="font-semibold text-gray-900">{hospital.full_name}</p>
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <p className="font-semibold text-gray-900 text-base">{hospital.full_name}</p>
                         {hospital.verified ? (
-                          <Badge className="bg-green-100 text-green-700">
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 border">
                             <CheckCircle className="h-3 w-3 mr-1" />
                             Verified
                           </Badge>
                         ) : (
-                          <Badge className="bg-yellow-100 text-yellow-700">
+                          <Badge className="bg-amber-100 text-amber-700 border-amber-200 border">
                             <XCircle className="h-3 w-3 mr-1" />
                             Unverified
                           </Badge>
                         )}
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                        <span className="flex items-center gap-1">
-                          <Mail className="h-3.5 w-3.5" />
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500">
+                        <span className="flex items-center gap-1.5">
+                          <Mail className="h-3.5 w-3.5 text-gray-400" />
                           {hospital.email}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Phone className="h-3.5 w-3.5" />
+                        <span className="flex items-center gap-1.5">
+                          <Phone className="h-3.5 w-3.5 text-gray-400" />
                           {hospital.phone}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5" />
+                        <span className="flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5 text-gray-400" />
                           {hospital.city}
                         </span>
                       </div>
-                      <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-400">
-                        <span>🏥 Reg: {hospital.registration_number || 'N/A'}</span>
-                        <span>📋 License: {hospital.blood_bank_license || 'N/A'}</span>
-                        <span className="flex items-center gap-1">
+                      <div className="flex flex-wrap items-center gap-3 mt-2">
+                        <span className="inline-flex items-center gap-1 text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                          <FileText className="h-3 w-3" />
+                          Reg: {hospital.registration_number || 'N/A'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                          <KeyRound className="h-3 w-3" />
+                          License: {hospital.blood_bank_license || 'N/A'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-400">
                           <Calendar className="h-3 w-3" />
-                          {new Date(hospital.created_at).toLocaleDateString()}
+                          Joined {new Date(hospital.created_at).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <Button 
                       size="sm"
                       variant={hospital.verified ? "outline" : "default"}
-                      className={hospital.verified ? "" : "bg-green-600 hover:bg-green-700"}
+                      className={hospital.verified ? "border-emerald-200 text-emerald-600 hover:bg-emerald-50" : "bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-lg shadow-emerald-500/20"}
                       onClick={() => toggleVerification(hospital.id, hospital.verified)}
                     >
                       {hospital.verified ? 'Unverify' : 'Verify'}
@@ -546,14 +621,14 @@ export default function AdminHospitalsPage() {
                       size="sm" 
                       variant="ghost"
                       onClick={() => setSelectedHospital(selectedHospital?.id === hospital.id ? null : hospital)}
-                      className="text-purple-600"
+                      className="text-purple-600 hover:bg-purple-50 hover:text-purple-700"
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <Button 
                       size="sm" 
                       variant="ghost" 
-                      className="text-red-600"
+                      className="text-red-500 hover:bg-red-50 hover:text-red-600"
                       onClick={() => {
                         setSelectedHospital(hospital);
                         setShowDeleteConfirm(true);
@@ -565,23 +640,23 @@ export default function AdminHospitalsPage() {
                 </div>
 
                 {selectedHospital?.id === hospital.id && (
-                  <div className="mt-3 pt-3 border-t">
+                  <div className="mt-4 pt-4 border-t border-gray-100 bg-gradient-to-r from-blue-50/50 to-transparent rounded-xl p-3">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       <div>
-                        <p className="text-xs text-gray-500">Address</p>
-                        <p className="text-sm font-medium">{hospital.address || 'N/A'}</p>
+                        <p className="text-xs text-gray-500 font-medium">Address</p>
+                        <p className="text-sm font-medium text-gray-900">{hospital.address || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Registration Number</p>
-                        <p className="text-sm font-medium">{hospital.registration_number || 'N/A'}</p>
+                        <p className="text-xs text-gray-500 font-medium">Registration Number</p>
+                        <p className="text-sm font-medium text-gray-900">{hospital.registration_number || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Blood Bank License</p>
-                        <p className="text-sm font-medium">{hospital.blood_bank_license || 'N/A'}</p>
+                        <p className="text-xs text-gray-500 font-medium">Blood Bank License</p>
+                        <p className="text-sm font-medium text-gray-900">{hospital.blood_bank_license || 'N/A'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Joined</p>
-                        <p className="text-sm font-medium">{new Date(hospital.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-500 font-medium">Joined</p>
+                        <p className="text-sm font-medium text-gray-900">{new Date(hospital.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </div>
@@ -594,17 +669,24 @@ export default function AdminHospitalsPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && selectedHospital && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Hospital</h3>
-            <p className="text-gray-600 mb-4">
-              Are you sure you want to delete <span className="font-semibold">{selectedHospital.full_name}</span>? 
-              This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/20 shrink-0">
+                <AlertTriangle className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Delete Hospital</h3>
+                <p className="text-gray-600 text-sm">
+                  Are you sure you want to delete <span className="font-semibold text-gray-900">{selectedHospital.full_name}</span>? 
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
               <Button 
                 variant="outline" 
-                className="flex-1"
+                className="flex-1 border-gray-200 hover:bg-gray-50"
                 onClick={() => {
                   setShowDeleteConfirm(false);
                   setSelectedHospital(null);
@@ -613,9 +695,10 @@ export default function AdminHospitalsPage() {
                 Cancel
               </Button>
               <Button 
-                className="flex-1 bg-red-600 hover:bg-red-700"
+                className="flex-1 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 shadow-lg shadow-red-500/20"
                 onClick={() => deleteHospital(selectedHospital.id)}
               >
+                <Trash2 className="h-4 w-4 mr-2" />
                 Delete
               </Button>
             </div>
@@ -630,16 +713,27 @@ export default function AdminHospitalsPage() {
 interface StatsCardProps {
   label: string;
   value: number;
-  color: StatsColorType;
+  icon: React.ReactNode;
+  iconBg: string;
+  accent: string;
+  to: string;
 }
 
-function StatsCard({ label, value, color }: StatsCardProps) {
+function StatsCard({ label, value, icon, iconBg, accent, to }: StatsCardProps) {
   return (
-    <Card className={statsColors[color]}>
-      <CardContent className="p-4 text-center">
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs">{label}</p>
+    <Card className={`relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br ${to} hover:-translate-y-0.5`}>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
+            <p className="text-xs text-gray-500 font-medium mt-0.5">{label}</p>
+          </div>
+          <div className={`w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
+            {icon}
+          </div>
+        </div>
       </CardContent>
+      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${accent}`}></div>
     </Card>
   );
 }
