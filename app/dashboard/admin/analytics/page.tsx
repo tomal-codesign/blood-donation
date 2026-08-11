@@ -83,8 +83,7 @@ export default function AdminAnalyticsPage() {
     monthlyDonors: [],
     bloodGroupDistribution: {},
     verifiedHospitals: 0,
-    unverifiedHospitals: 0,
-    recentActivity: []
+    unverifiedHospitals: 0
   });
 
   useEffect(() => {
