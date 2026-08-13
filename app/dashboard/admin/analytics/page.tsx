@@ -10,8 +10,7 @@ import {
   TrendingUp, 
   Users, 
   Droplet, 
-  Hospital, 
-  Loader2,
+  Hospital,
   RefreshCw,
   ArrowUp,
   ArrowDown,
@@ -22,7 +21,6 @@ import {
   Sparkles,
   Building2,
   Shield,
-  UserPlus,
   BarChart3,
   PieChart,
   LineChart,
@@ -31,8 +29,23 @@ import {
   XCircle,
   AlertTriangle,
   HeartPulse,
+  Phone,
+  MapPin,
+  Calendar,
+  Search,
+  Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  Area,
+  AreaChart as ReAreaChart,
+} from 'recharts';
 
 interface AnalyticsData {
   totalUsers: number;
@@ -44,7 +57,6 @@ interface AnalyticsData {
   totalRequests: number;
   pendingRequests: number;
   matchedRequests: number;
-  fulfilledRequests: number;
   cancelledRequests: number;
   criticalRequests: number;
   fulfillmentRate: number;
@@ -58,10 +70,29 @@ interface AnalyticsData {
   unverifiedHospitals: number;
 }
 
+interface DonorType {
+  id: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  division: string;
+  district: string;
+  blood_group: string;
+  is_available: boolean;
+  last_donation_date: string | null;
+  total_donations: number;
+  weight: number | null;
+  medical_conditions: string[];
+  created_at: string;
+}
+
 export default function AdminAnalyticsPage() {
   const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [donors, setDonors] = useState<DonorType[]>([]);
+  const [donorSearch, setDonorSearch] = useState('');
+  const [donorFilter, setDonorFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [data, setData] = useState<AnalyticsData>({
     totalUsers: 0,
     totalDonors: 0,
@@ -72,7 +103,6 @@ export default function AdminAnalyticsPage() {
     totalRequests: 0,
     pendingRequests: 0,
     matchedRequests: 0,
-    fulfilledRequests: 0,
     cancelledRequests: 0,
     criticalRequests: 0,
     fulfillmentRate: 0,
@@ -130,46 +160,46 @@ export default function AdminAnalyticsPage() {
         hospitals = data.hospitals || [];
       }
 
-      // 4. Fetch inventory for blood distribution
-      let allInventory: any[] = [];
-      for (const hospital of hospitals) {
-        const inventoryRes = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/inventory/${hospital.id}`,
-          { headers: { 'Authorization': `Bearer ${token}` } }
-        );
-        
-        if (inventoryRes.ok) {
-          const data = await inventoryRes.json();
-          const inventory = data.inventory || [];
-          allInventory = [...allInventory, ...inventory];
-        }
+      // 4. Fetch donors with availability info (from donors table)
+      const donorsRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/donors`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      
+      let donorList: DonorType[] = [];
+      if (donorsRes.ok) {
+        const data = await donorsRes.json();
+        donorList = data.donors || [];
       }
+      setDonors(donorList);
 
       // Calculate stats
-      const donors = users.filter((u: any) => u.role === 'donor');
       const hospitalsList = users.filter((u: any) => u.role === 'hospital');
       const admins = users.filter((u: any) => u.role === 'admin');
-      const activeDonors = donors.filter((d: any) => d.is_available === true);
-      const inactiveDonors = donors.filter((d: any) => d.is_available === false);
+      
+      // Use donorList from donors table for accurate availability
+      const activeDonors = donorList.filter((d: DonorType) => d.is_available === true);
+      const inactiveDonorsList = donorList.filter((d: DonorType) => d.is_available === false);
       
       const pending = requests.filter((r: any) => r.status === 'pending');
       const matched = requests.filter((r: any) => r.status === 'matched');
-      const fulfilled = requests.filter((r: any) => r.status === 'fulfilled');
       const cancelled = requests.filter((r: any) => r.status === 'cancelled');
       const critical = requests.filter((r: any) => r.priority === 'critical');
       
+      // Matched is the final step in this system
+      const completedRequests = matched.length;
       const fulfillmentRate = requests.length > 0 
-        ? Math.round((fulfilled.length / requests.length) * 100) 
+        ? Math.round((completedRequests / requests.length) * 100) 
         : 0;
 
-      // Blood group distribution
+      // Blood group distribution (from donors table)
       const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
       const distribution: Record<string, number> = {};
       bloodGroups.forEach(bg => distribution[bg] = 0);
       
-      allInventory.forEach((item: any) => {
-        if (distribution[item.blood_group] !== undefined) {
-          distribution[item.blood_group] += item.units_available || 0;
+      donorList.forEach((d: DonorType) => {
+        if (distribution[d.blood_group] !== undefined) {
+          distribution[d.blood_group] += 1;
         }
       });
 
@@ -187,8 +217,8 @@ export default function AdminAnalyticsPage() {
           r.created_at >= monthStart && r.created_at <= monthEnd
         ).length;
         
-        const monthNewDonors = donors.filter((d: any) => 
-          d.created_at >= monthStart && d.created_at <= monthEnd
+        const monthNewDonors = users.filter((u: any) => 
+          u.role === 'donor' && u.created_at >= monthStart && u.created_at <= monthEnd
         ).length;
         
         monthlyRequests.push(monthRequests);
@@ -197,21 +227,20 @@ export default function AdminAnalyticsPage() {
 
       setData({
         totalUsers: users.length,
-        totalDonors: donors.length,
+        totalDonors: donorList.length,
         totalHospitals: hospitalsList.length,
         totalAdmins: admins.length,
         activeDonors: activeDonors.length,
-        inactiveDonors: inactiveDonors.length,
+        inactiveDonors: inactiveDonorsList.length,
         totalRequests: requests.length,
         pendingRequests: pending.length,
         matchedRequests: matched.length,
-        fulfilledRequests: fulfilled.length,
         cancelledRequests: cancelled.length,
         criticalRequests: critical.length,
         fulfillmentRate,
-        totalDonations: fulfilled.length,
-        totalUnitsDonated: fulfilled.reduce((sum: number, r: any) => sum + (r.units_needed || 1), 0),
-        livesSaved: fulfilled.length * 3,
+        totalDonations: matched.length,
+        totalUnitsDonated: matched.reduce((sum: number, r: any) => sum + (r.units_needed || 1), 0),
+        livesSaved: matched.length * 3,
         monthlyRequests,
         monthlyDonors,
         bloodGroupDistribution: distribution,
@@ -253,6 +282,34 @@ export default function AdminAnalyticsPage() {
     return values.length > 0 ? Math.max(...values) : 1;
   };
 
+  // Build monthly trend data for charts
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const monthlyTrendData = data.monthlyRequests.map((count, index) => {
+    const monthIndex = (new Date().getMonth() - 5 + index + 12) % 12;
+    return {
+      month: months[monthIndex],
+      requests: count,
+      donors: data.monthlyDonors[index] || 0,
+    };
+  });
+
+  // Filter donors for the donor management section
+  const filteredDonors = donors.filter(d => {
+    const matchesSearch = !donorSearch || 
+      d.full_name?.toLowerCase().includes(donorSearch.toLowerCase()) ||
+      d.phone?.includes(donorSearch) ||
+      d.blood_group?.toLowerCase().includes(donorSearch.toLowerCase()) ||
+      d.division?.toLowerCase().includes(donorSearch.toLowerCase()) ||
+      d.district?.toLowerCase().includes(donorSearch.toLowerCase());
+    
+    const matchesFilter = 
+      donorFilter === 'all' ||
+      (donorFilter === 'active' && d.is_available) ||
+      (donorFilter === 'inactive' && !d.is_available);
+    
+    return matchesSearch && matchesFilter;
+  });
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh]">
@@ -271,7 +328,7 @@ export default function AdminAnalyticsPage() {
     );
   }
 
-  const donationRate = data.totalRequests > 0 ? Math.round((data.fulfilledRequests / data.totalRequests) * 100) : 0;
+  const donationRate = data.totalRequests > 0 ? Math.round((data.matchedRequests / data.totalRequests) * 100) : 0;
   const verificationRate = data.totalHospitals > 0 ? Math.round((data.verifiedHospitals / data.totalHospitals) * 100) : 0;
 
   return (
@@ -335,7 +392,7 @@ export default function AdminAnalyticsPage() {
             </div>
             <div className="flex items-center gap-2 text-xs text-purple-200/60">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-              {data.fulfillmentRate}% fulfillment rate
+              {data.fulfillmentRate}% match rate
             </div>
           </div>
         </div>
@@ -344,7 +401,7 @@ export default function AdminAnalyticsPage() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
-          title="Fulfillment Rate"
+          title="Match Rate"
           value={`${data.fulfillmentRate}%`}
           icon={<Target className="h-5 w-5 text-white" />}
           trend={data.fulfillmentRate > 70 ? 'up' : 'down'}
@@ -396,8 +453,8 @@ export default function AdminAnalyticsPage() {
               <StatRow label="Donors" value={data.totalDonors} icon={<Droplet className="h-4 w-4 text-emerald-500" />} />
               <StatRow label="Hospitals" value={data.totalHospitals} icon={<Hospital className="h-4 w-4 text-indigo-500" />} />
               <StatRow label="Admins" value={data.totalAdmins} icon={<Shield className="h-4 w-4 text-purple-500" />} />
-              <StatRow label="Active Donors" value={data.activeDonors} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
-              <StatRow label="Inactive Donors" value={data.inactiveDonors} icon={<XCircle className="h-4 w-4 text-red-500" />} />
+              <StatRow label="Available Donors" value={data.activeDonors} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
+              <StatRow label="Unavailable Donors" value={data.inactiveDonors} icon={<XCircle className="h-4 w-4 text-red-500" />} />
             </div>
           </CardContent>
         </Card>
@@ -416,14 +473,152 @@ export default function AdminAnalyticsPage() {
             <div className="space-y-2">
               <StatRow label="Total Requests" value={data.totalRequests} icon={<Droplet className="h-4 w-4 text-red-500" />} />
               <StatRow label="Pending" value={data.pendingRequests} icon={<Clock className="h-4 w-4 text-yellow-500" />} />
-              <StatRow label="Matched" value={data.matchedRequests} icon={<UserCheck className="h-4 w-4 text-blue-500" />} />
-              <StatRow label="Fulfilled" value={data.fulfilledRequests} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
+              <StatRow label="Matched (Final)" value={data.matchedRequests} icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
               <StatRow label="Cancelled" value={data.cancelledRequests} icon={<XCircle className="h-4 w-4 text-red-500" />} />
               <StatRow label="Critical" value={data.criticalRequests} icon={<AlertTriangle className="h-4 w-4 text-red-600" />} />
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Donor Management Section */}
+      <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-emerald-50/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-500/20">
+              <UserCheck className="h-4.5 w-4.5 text-white" />
+            </div>
+            Donor Management
+          </CardTitle>
+          <CardDescription>
+            View all donors and their availability status
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Donor Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-5">
+            <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-gray-900">{data.totalDonors}</p>
+                <p className="text-xs text-gray-500 font-medium">Total Donors</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Users className="h-5 w-5 text-white" />
+              </div>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-emerald-600">{data.activeDonors}</p>
+                <p className="text-xs text-gray-500 font-medium">Available Donors</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              </div>
+            </div>
+            <div className="bg-white border border-gray-100 rounded-xl p-4 flex items-center justify-between">
+              <div>
+                <p className="text-2xl font-bold text-red-500">{data.inactiveDonors}</p>
+                <p className="text-xs text-gray-500 font-medium">Unavailable Donors</p>
+              </div>
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/20">
+                <XCircle className="h-5 w-5 text-white" />
+              </div>
+            </div>
+          </div>
+
+          {/* Donor Filters */}
+          <div className="flex flex-col md:flex-row gap-3 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name, phone, blood group, division or district..."
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 bg-white"
+                value={donorSearch}
+                onChange={(e) => setDonorSearch(e.target.value)}
+              />
+            </div>
+            <div className="w-full md:w-48 relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <select
+                className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 bg-white"
+                value={donorFilter}
+                onChange={(e) => setDonorFilter(e.target.value as 'all' | 'active' | 'inactive')}
+              >
+                <option value="all">All Donors</option>
+                <option value="active">Available Donors</option>
+                <option value="inactive">Unavailable Donors</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Donor List */}
+          {filteredDonors.length === 0 ? (
+            <div className="text-center py-10">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center mb-3">
+                <Users className="h-7 w-7 text-gray-400" />
+              </div>
+              <p className="text-gray-500 font-medium">No donors found</p>
+              <p className="text-sm text-gray-400 mt-1">Try adjusting your search or filter</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredDonors.map((donor) => (
+                <div key={donor.id} className="flex flex-wrap items-center justify-between gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:shadow-md transition-all duration-300">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md shrink-0 ${
+                      donor.is_available 
+                        ? 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/20' 
+                        : 'bg-gradient-to-br from-gray-400 to-gray-500 shadow-gray-500/20'
+                    }`}>
+                      <UserCheck className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-gray-900 text-sm truncate">{donor.full_name}</p>
+                        <Badge className={`border ${getGroupColor(donor.blood_group)} text-white border-transparent`}>
+                          {donor.blood_group}
+                        </Badge>
+                        {donor.is_available ? (
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1"></span>
+                            Available
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-red-100 text-red-700 border-red-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-1"></span>
+                            Unavailable
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-0.5">
+                        <span className="flex items-center gap-1">
+                          <Phone className="h-3 w-3 text-gray-400" />
+                          {donor.phone}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-gray-400" />
+                          {donor.district || donor.division || 'N/A'}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Droplet className="h-3 w-3 text-gray-400" />
+                          {donor.total_donations} donations
+                        </span>
+                        {donor.last_donation_date && (
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3 text-gray-400" />
+                            Last: {new Date(donor.last_donation_date).toLocaleDateString()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Monthly Trends */}
       <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-purple-50/30">
@@ -437,67 +632,68 @@ export default function AdminAnalyticsPage() {
           <CardDescription>Last 6 months performance</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                <Droplet className="h-4 w-4 text-blue-500" />
-                Requests per Month
-              </h4>
-              <div className="flex items-end gap-2 h-32">
-                {data.monthlyRequests.map((count, index) => {
-                  const max = Math.max(...data.monthlyRequests, 1);
-                  const height = (count / max) * 100;
-                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                  const monthIndex = (new Date().getMonth() - 5 + index + 12) % 12;
-                  
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center group">
-                      <div className="w-full bg-blue-100 rounded-t relative" style={{ height: `${Math.max(height, 5)}%` }}>
-                        <div 
-                          className="absolute bottom-0 w-full bg-gradient-to-t from-blue-500 to-indigo-400 rounded-t transition-all duration-500 group-hover:from-blue-600 group-hover:to-indigo-500"
-                          style={{ height: `${height}%` }}
-                        >
-                          <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-gray-700">
-                            {count}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-500 mt-2">{months[monthIndex]}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                <UserPlus className="h-4 w-4 text-emerald-500" />
-                New Donors per Month
-              </h4>
-              <div className="flex items-end gap-2 h-32">
-                {data.monthlyDonors.map((count, index) => {
-                  const max = Math.max(...data.monthlyDonors, 1);
-                  const height = (count / max) * 100;
-                  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-                  const monthIndex = (new Date().getMonth() - 5 + index + 12) % 12;
-                  
-                  return (
-                    <div key={index} className="flex-1 flex flex-col items-center group">
-                      <div className="w-full bg-emerald-100 rounded-t relative" style={{ height: `${Math.max(height, 5)}%` }}>
-                        <div 
-                          className="absolute bottom-0 w-full bg-gradient-to-t from-emerald-500 to-teal-400 rounded-t transition-all duration-500 group-hover:from-emerald-600 group-hover:to-teal-500"
-                          style={{ height: `${height}%` }}
-                        >
-                          <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium text-gray-700">
-                            {count}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs text-gray-500 mt-2">{months[monthIndex]}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <ReAreaChart data={monthlyTrendData} margin={{ top: 5, right: 30, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="requestsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0.1} />
+                  </linearGradient>
+                  <linearGradient id="donorsGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12, fill: '#6b7280' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis 
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                  }}
+                  itemStyle={{ fontSize: '12px' }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '10px' }}
+                  iconSize={10}
+                  iconType="circle"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="requests" 
+                  name="Requests" 
+                  stroke="#6366f1" 
+                  strokeWidth={2}
+                  fill="url(#requestsGradient)"
+                  dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: '#ffffff' }}
+                  activeDot={{ r: 6, fill: '#6366f1', strokeWidth: 2, stroke: '#ffffff' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="donors" 
+                  name="New Donors" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  fill="url(#donorsGradient)"
+                  dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#ffffff' }}
+                  activeDot={{ r: 6, fill: '#10b981', strokeWidth: 2, stroke: '#ffffff' }}
+                />
+              </ReAreaChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
@@ -512,7 +708,7 @@ export default function AdminAnalyticsPage() {
               </div>
               Blood Group Distribution
             </CardTitle>
-            <CardDescription>Available units by blood group</CardDescription>
+            <CardDescription>Donor count by blood group</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">

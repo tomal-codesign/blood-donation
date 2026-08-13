@@ -6,23 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { 
   Hospital, 
@@ -83,9 +66,6 @@ export default function AdminHospitalsPage() {
     blood_bank_license: '',
     verified: true
   });
-
-  const cities = ['Dhaka', 'Chittagong', 'Khulna', 'Rajshahi', 'Sylhet', 'Barishal', 'Rangpur', 'Mymensingh'];
-
   useEffect(() => {
     fetchHospitals();
   }, []);
@@ -320,162 +300,6 @@ export default function AdminHospitalsPage() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              
-              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white shadow-lg shadow-purple-500/30 transition-all">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Hospital
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold">Add New Hospital</DialogTitle>
-                    <DialogDescription>
-                      Create a hospital account directly. The hospital will be able to login and manage their blood bank.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <form onSubmit={handleAddHospital} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-semibold">Hospital Name *</Label>
-                        <Input
-                          required
-                          placeholder="Dhaka Medical Hospital"
-                          value={formData.hospital_name}
-                          onChange={(e) => setFormData({...formData, hospital_name: e.target.value})}
-                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-semibold">Email *</Label>
-                        <Input
-                          type="email"
-                          required
-                          placeholder="hospital@example.com"
-                          value={formData.email}
-                          onChange={(e) => setFormData({...formData, email: e.target.value})}
-                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-semibold">Password *</Label>
-                        <Input
-                          type="password"
-                          required
-                          placeholder="••••••••"
-                          value={formData.password}
-                          onChange={(e) => setFormData({...formData, password: e.target.value})}
-                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
-                        />
-                        <p className="text-xs text-gray-400 mt-1">Minimum 6 characters</p>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-semibold">Phone *</Label>
-                        <Input
-                          required
-                          placeholder="01712345678"
-                          value={formData.phone}
-                          onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-semibold">City *</Label>
-                        <Select 
-                          value={formData.city} 
-                          onValueChange={(value) => setFormData({...formData, city: value})}
-                        >
-                          <SelectTrigger className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20">
-                            <SelectValue placeholder="Select city" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {cities.map(city => (
-                              <SelectItem key={city} value={city}>{city}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-sm font-semibold">Address</Label>
-                        <Input
-                          placeholder="123, Hospital Road"
-                          value={formData.address}
-                          onChange={(e) => setFormData({...formData, address: e.target.value})}
-                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <Label className="text-sm font-semibold">Registration Number</Label>
-                        <Input
-                          placeholder="HOSP-2024-001"
-                          value={formData.registration_number}
-                          onChange={(e) => setFormData({...formData, registration_number: e.target.value})}
-                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-sm font-semibold">Blood Bank License</Label>
-                        <Input
-                          placeholder="BB-2024-001"
-                          value={formData.blood_bank_license}
-                          onChange={(e) => setFormData({...formData, blood_bank_license: e.target.value})}
-                          className="mt-1 border-gray-200 focus:border-purple-400 focus:ring-purple-400/20"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <Checkbox 
-                        id="verified" 
-                        checked={formData.verified}
-                        onCheckedChange={(checked) => setFormData({...formData, verified: checked as boolean})}
-                      />
-                      <Label htmlFor="verified" className="text-sm font-medium cursor-pointer">
-                        Mark as Verified (Hospital can login immediately)
-                      </Label>
-                    </div>
-
-                    <div className="flex gap-3 pt-4 border-t">
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        className="flex-1 border-gray-200 hover:bg-gray-50"
-                        onClick={() => setDialogOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                      <Button 
-                        type="submit" 
-                        className="flex-1 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 shadow-lg shadow-purple-500/20"
-                        disabled={submitting}
-                      >
-                        {submitting ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            Creating...
-                          </>
-                        ) : (
-                          <>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Create Hospital
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </form>
-                </DialogContent>
-              </Dialog>
             </div>
             <div className="flex items-center gap-2 text-xs text-purple-200/60">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>

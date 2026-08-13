@@ -264,10 +264,6 @@ export default function AdminUsersPage() {
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Refresh
               </Button>
-              <Button className="bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-600 hover:to-violet-700 text-white shadow-lg shadow-purple-500/30 transition-all">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add User
-              </Button>
             </div>
             <div className="flex items-center gap-2 text-xs text-purple-200/60">
               <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
