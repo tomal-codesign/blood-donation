@@ -2,16 +2,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/hooks/useAuth';
 import {
   Brain,
   AlertCircle,
-  CheckCircle,
   Clock,
-  Loader2,
   RefreshCw,
   Target,
   BarChart3,
@@ -21,9 +19,11 @@ import {
   Eye,
   Calendar,
   TrendingUp,
-  TrendingDown,
+  ArrowRight,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Shield,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,15 +46,6 @@ interface AIStats {
   currentMonthDemand: number;
   nextMonthDemand: number;
 }
-
-type AICardColorType = 'blue' | 'red' | 'yellow' | 'green';
-
-const aiCardColors: Record<AICardColorType, string> = {
-  blue: 'bg-blue-50',
-  red: 'bg-red-50',
-  yellow: 'bg-yellow-50',
-  green: 'bg-green-50'
-};
 
 export default function AdminAIMonitorPage() {
   const { token } = useAuth();
@@ -79,57 +70,35 @@ export default function AdminAIMonitorPage() {
   const fetchAIData = async () => {
     try {
       setLoading(true);
-      
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/ai/predict`,
         { headers: { 'Authorization': `Bearer ${token}` } }
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         setPredictions(data.predictions || []);
-        
+
         const critical = data.predictions?.filter((p: any) => p.status === 'critical').length || 0;
         const low = data.predictions?.filter((p: any) => p.status === 'low').length || 0;
         const stable = data.predictions?.filter((p: any) => p.status === 'stable').length || 0;
-        
-        // Calculate current and next month demand
+
         const currentMonthDemand = data.predictions?.reduce((sum: number, p: any) => sum + (p.monthly_demand || 0), 0) || 0;
-        const nextMonthDemand = Math.round(currentMonthDemand * 1.15); // 15% growth prediction
-        
+        const nextMonthDemand = Math.round(currentMonthDemand * 1.15);
+
         setStats({
           totalPredictions: data.predictions?.length || 0,
           criticalGroups: critical,
           lowGroups: low,
           stableGroups: stable,
-          accuracy: 92,
+          accuracy: data.accuracy || 0,
           lastUpdated: data.generated_at || new Date().toISOString(),
           currentMonthDemand,
           nextMonthDemand
         });
       } else {
-        // Fallback mock data
-        setPredictions([
-          { blood_group: 'AB-', units_available: 2, monthly_demand: 4, days_until_shortage: 5, status: 'critical', recommendation: '🔴 URGENT: Run donation campaign for AB-' },
-          { blood_group: 'B-', units_available: 8, monthly_demand: 3, days_until_shortage: 22, status: 'low', recommendation: '🟡 CAUTION: Monitor B- levels' },
-          { blood_group: 'O+', units_available: 30, monthly_demand: 5, days_until_shortage: 180, status: 'stable', recommendation: '✅ Stock for O+ is sufficient' },
-          { blood_group: 'A+', units_available: 25, monthly_demand: 4, days_until_shortage: 60, status: 'stable', recommendation: '✅ Stock for A+ is sufficient' },
-          { blood_group: 'A-', units_available: 10, monthly_demand: 2, days_until_shortage: 45, status: 'low', recommendation: '🟡 CAUTION: Monitor A- levels' },
-          { blood_group: 'B+', units_available: 20, monthly_demand: 3, days_until_shortage: 80, status: 'stable', recommendation: '✅ Stock for B+ is sufficient' },
-          { blood_group: 'AB+', units_available: 12, monthly_demand: 2, days_until_shortage: 55, status: 'stable', recommendation: '✅ Stock for AB+ is sufficient' },
-          { blood_group: 'O-', units_available: 5, monthly_demand: 6, days_until_shortage: 10, status: 'critical', recommendation: '🔴 URGENT: Run donation campaign for O-' }
-        ]);
-        
-        setStats({
-          totalPredictions: 8,
-          criticalGroups: 2,
-          lowGroups: 2,
-          stableGroups: 4,
-          accuracy: 92,
-          lastUpdated: new Date().toISOString(),
-          currentMonthDemand: 29,
-          nextMonthDemand: 33
-        });
+        toast.error('Failed to load AI predictions from server');
       }
     } catch (error) {
       console.error('Error fetching AI data:', error);
@@ -146,7 +115,6 @@ export default function AdminAIMonitorPage() {
     toast.success('AI data refreshed');
   };
 
-  // Get month name
   const getMonthName = (offset: number = 0) => {
     const date = new Date();
     date.setMonth(date.getMonth() + offset);
@@ -155,140 +123,202 @@ export default function AdminAIMonitorPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Loader2 className="h-12 w-12 animate-spin text-purple-600" />
+      <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="relative">
+          <div className="absolute inset-0 bg-purple-200/50 rounded-full blur-xl animate-pulse"></div>
+          <div className="relative w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 via-violet-500 to-indigo-400 flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <Brain className="h-8 w-8 text-white animate-bounce" />
+          </div>
+        </div>
+        <p className="mt-5 text-gray-500 font-medium">Loading AI predictions...</p>
+        <div className="mt-3 h-1.5 w-48 bg-gray-200 rounded-full overflow-hidden">
+          <div className="h-full w-1/2 bg-gradient-to-r from-purple-500 to-violet-500 rounded-full animate-[loading_1s_ease-in-out_infinite]"></div>
+        </div>
+        <style>{`@keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(300%); } }`}</style>
       </div>
     );
   }
 
+  const demandGrowth = stats.currentMonthDemand > 0
+    ? Math.round(((stats.nextMonthDemand - stats.currentMonthDemand) / stats.currentMonthDemand) * 100)
+    : 0;
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Brain className="h-6 w-6 text-purple-600" />
-            AI Monitoring
-          </h1>
-          <p className="text-gray-500 mt-1">AI-powered blood shortage predictions and monitoring</p>
+    <div className="max-w-7xl mx-auto space-y-6 p-4 sm:p-6">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-purple-900 to-indigo-900 p-6 sm:p-8 shadow-2xl shadow-purple-900/20 border border-white/10">
+        <div className="absolute -top-20 -right-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-24 -left-16 w-72 h-72 bg-indigo-500/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-8 right-1/3 w-2 h-2 bg-white/30 rounded-full"></div>
+        <div className="absolute top-16 right-1/4 w-1.5 h-1.5 bg-purple-300/40 rounded-full"></div>
+        <div className="absolute bottom-12 right-1/2 w-2 h-2 bg-indigo-300/30 rounded-full"></div>
+
+        <div className="relative flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-white text-xs font-semibold mb-4">
+              <Sparkles className="h-3.5 w-3.5 text-purple-300" />
+              AI Monitoring
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            </div>
+            <h1 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">
+              AI Shortage Monitor
+            </h1>
+            <p className="text-purple-200/80 mt-2 text-sm sm:text-base max-w-lg leading-relaxed">
+              AI-powered blood shortage predictions and monitoring for all blood groups.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 mt-4">
+              <Badge className="bg-white/10 text-white border-white/10 backdrop-blur-sm">
+                <Brain className="h-3 w-3 mr-1.5" />
+                {stats.totalPredictions} Groups
+              </Badge>
+              <Badge className="bg-white/10 text-white border-white/10 backdrop-blur-sm">
+                <AlertCircle className="h-3 w-3 mr-1.5" />
+                {stats.criticalGroups} Critical
+              </Badge>
+              <Badge className="bg-white/10 text-white border-white/10 backdrop-blur-sm">
+                <Target className="h-3 w-3 mr-1.5" />
+                {stats.accuracy}% Accuracy
+              </Badge>
+              <Badge className="bg-white/10 text-white border-white/10 backdrop-blur-sm">
+                <Droplet className="h-3 w-3 mr-1.5" />
+                {stats.currentMonthDemand} Units Demand
+              </Badge>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-start lg:items-end gap-3">
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-[10px] uppercase tracking-widest text-purple-300/70 font-semibold">Last Updated</p>
+                <p className="text-sm text-white font-medium">{new Date(stats.lastUpdated).toLocaleTimeString()}</p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 hover:text-white transition-all"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-purple-200/60">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              {stats.stableGroups} stable groups
+            </div>
+          </div>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="gap-2"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
       </div>
 
-      {/* AI Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AICard
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
           title="Total Predictions"
           value={stats.totalPredictions}
-          icon={<BarChart3 className="h-5 w-5 text-blue-500" />}
-          color="blue"
+          icon={<BarChart3 className="h-5 w-5 text-white" />}
+          iconBg="bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/25"
+          accent="bg-gradient-to-r from-blue-500 to-indigo-400"
+          to="from-white to-blue-50/50"
         />
-        <AICard
+        <MetricCard
           title="Critical Groups"
           value={stats.criticalGroups}
-          icon={<AlertCircle className="h-5 w-5 text-red-500" />}
-          color="red"
+          icon={<AlertCircle className="h-5 w-5 text-white" />}
+          trend={stats.criticalGroups > 0 ? 'down' : 'up'}
+          iconBg="bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/25"
+          accent="bg-gradient-to-r from-red-500 to-rose-400"
+          to="from-white to-red-50/50"
         />
-        <AICard
+        <MetricCard
           title="Low Groups"
           value={stats.lowGroups}
-          icon={<Clock className="h-5 w-5 text-yellow-500" />}
-          color="yellow"
+          icon={<Clock className="h-5 w-5 text-white" />}
+          iconBg="bg-gradient-to-br from-yellow-500 to-amber-600 shadow-yellow-500/25"
+          accent="bg-gradient-to-r from-yellow-500 to-amber-400"
+          to="from-white to-yellow-50/50"
         />
-        <AICard
+        <MetricCard
           title="AI Accuracy"
           value={`${stats.accuracy}%`}
-          icon={<Target className="h-5 w-5 text-green-500" />}
-          color="green"
+          icon={<Target className="h-5 w-5 text-white" />}
+          iconBg="bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/25"
+          accent="bg-gradient-to-r from-emerald-500 to-teal-400"
+          to="from-white to-emerald-50/50"
         />
       </div>
 
-      {/* Demand Overview - New Section */}
-      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <Calendar className="h-6 w-6 text-blue-600" />
-              <div>
-                <h4 className="font-semibold text-gray-900">Monthly Demand Overview</h4>
-                <p className="text-sm text-gray-600">Projected blood demand for upcoming months</p>
+      {/* Demand Overview & AI Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-blue-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/20">
+                <Calendar className="h-4.5 w-4.5 text-white" />
               </div>
-            </div>
-            <div className="flex items-center gap-6">
-              <div className="text-center">
-                <p className="text-xs text-gray-500">Current Month</p>
-                <p className="text-xl font-bold text-blue-600">{stats.currentMonthDemand} units</p>
-                <span className="text-xs text-gray-400">{getMonthName(0)}</span>
+              Monthly Demand Overview
+            </CardTitle>
+            <CardDescription>Projected blood demand for upcoming months</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Current Month</p>
+                  <p className="text-2xl font-bold text-blue-600">{stats.currentMonthDemand} units</p>
+                  <span className="text-xs text-gray-400">{getMonthName(0)}</span>
+                </div>
+                <ArrowRight className="h-6 w-6 text-gray-400" />
+                <div className="text-center">
+                  <p className="text-xs text-gray-500">Next Month</p>
+                  <p className="text-2xl font-bold text-purple-600">{stats.nextMonthDemand} units</p>
+                  <span className="text-xs text-gray-400">{getMonthName(1)}</span>
+                </div>
               </div>
-              <ArrowRight className="h-6 w-6 text-gray-400" />
-              <div className="text-center">
-                <p className="text-xs text-gray-500">Next Month</p>
-                <p className="text-xl font-bold text-purple-600">{stats.nextMonthDemand} units</p>
-                <span className="text-xs text-gray-400">{getMonthName(1)}</span>
-              </div>
-              <div className="bg-green-100 px-3 py-1 rounded-full">
+              <div className="bg-green-100 px-3 py-1.5 rounded-full">
                 <span className="text-sm font-medium text-green-700">
                   <TrendingUp className="h-3 w-3 inline mr-1" />
-                  +{Math.round(((stats.nextMonthDemand - stats.currentMonthDemand) / stats.currentMonthDemand) * 100)}% growth
+                  +{demandGrowth}% growth
                 </span>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* AI Status */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Activity className="h-5 w-5 text-purple-600" />
-            AI Model Status
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-green-600" />
-                <span className="font-medium text-green-800">Model Active</span>
+        <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-purple-50/30">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-md shadow-purple-500/20">
+                <Activity className="h-4.5 w-4.5 text-white" />
               </div>
-              <p className="text-sm text-green-600 mt-1">AI model is running normally</p>
+              AI Model Status
+            </CardTitle>
+            <CardDescription>Real-time model health and performance</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <StatRow label="Model Active" value="Running" icon={<CheckCircle2 className="h-4 w-4 text-emerald-500" />} />
+              <StatRow label="Accuracy Rate" value={`${stats.accuracy}%`} icon={<Target className="h-4 w-4 text-purple-500" />} />
+              <StatRow label="Last Updated" value={new Date(stats.lastUpdated).toLocaleString()} icon={<Clock className="h-4 w-4 text-blue-500" />} />
+              <StatRow label="Stable Groups" value={stats.stableGroups} icon={<Shield className="h-4 w-4 text-emerald-500" />} />
             </div>
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-blue-600" />
-                <span className="font-medium text-blue-800">Last Updated</span>
-              </div>
-              <p className="text-sm text-blue-600 mt-1">{new Date(stats.lastUpdated).toLocaleString()}</p>
-            </div>
-            <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
-              <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-purple-600" />
-                <span className="font-medium text-purple-800">Prediction Score</span>
-              </div>
-              <p className="text-sm text-purple-600 mt-1">{stats.accuracy}% accuracy rate</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Blood Shortage Predictions */}
-      <Card>
+      <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-red-50/30">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center justify-between">
-            <span>Blood Shortage Predictions</span>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-md shadow-red-500/20">
+              <Droplet className="h-4.5 w-4.5 text-white" />
+            </div>
+            Blood Shortage Predictions
+          </CardTitle>
+          <CardDescription>
             <Badge className="bg-purple-100 text-purple-700">
               {stats.totalPredictions} Blood Groups Monitored
             </Badge>
-          </CardTitle>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
@@ -300,52 +330,96 @@ export default function AdminAIMonitorPage() {
       </Card>
 
       {/* AI Insight */}
-      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
-        <CardContent className="p-4">
+      <Card className="border-0 shadow-sm overflow-hidden bg-gradient-to-br from-white via-white to-indigo-50/30">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/20">
+              <Brain className="h-4.5 w-4.5 text-white" />
+            </div>
+            AI Insight
+          </CardTitle>
+          <CardDescription>AI-generated recommendations and insights</CardDescription>
+        </CardHeader>
+        <CardContent>
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
               <Brain className="h-5 w-5 text-purple-600" />
             </div>
             <div>
-              <h4 className="font-semibold text-gray-900">AI Insight</h4>
+              <h4 className="font-semibold text-gray-900">Recommendation</h4>
               <p className="text-sm text-gray-600 mt-1">
-                {stats.criticalGroups > 0 
-                  ? `⚠️ ${stats.criticalGroups} blood group(s) are at critical shortage. Immediate donation campaigns needed. Next month demand is projected to increase by ${Math.round(((stats.nextMonthDemand - stats.currentMonthDemand) / stats.currentMonthDemand) * 100)}%.`
+                {stats.criticalGroups > 0
+                  ? `⚠️ ${stats.criticalGroups} blood group(s) are at critical shortage. Immediate donation campaigns needed. Next month demand is projected to increase by ${demandGrowth}%.`
                   : stats.lowGroups > 0
-                  ? `⚡ ${stats.lowGroups} blood group(s) are running low. Consider organizing donation drives. Demand is expected to rise by ${Math.round(((stats.nextMonthDemand - stats.currentMonthDemand) / stats.currentMonthDemand) * 100)}% next month.`
+                  ? `⚡ ${stats.lowGroups} blood group(s) are running low. Consider organizing donation drives. Demand is expected to rise by ${demandGrowth}% next month.`
                   : `✅ All blood groups are stable. Continue regular monitoring. Demand is expected to remain stable.`}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
+
     </div>
   );
 }
 
-// Helper Components with proper typing
-interface AICardProps {
+// Helper Components
+interface MetricCardProps {
   title: string;
   value: string | number;
   icon: React.ReactNode;
-  color: AICardColorType;
+  trend?: 'up' | 'down';
+  iconBg: string;
+  accent: string;
+  to: string;
 }
 
-function AICard({ title, value, icon, color }: AICardProps) {
+function MetricCard({ title, value, icon, trend, iconBg, accent, to }: MetricCardProps) {
   return (
-    <Card>
-      <CardContent className={`p-4 ${aiCardColors[color]}`}>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            <p className="text-xs text-gray-500">{title}</p>
+    <Card className={`relative overflow-hidden group hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br ${to} hover:-translate-y-0.5`}>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{title}</p>
+            <p className="text-3xl font-bold text-gray-900 mt-1.5">{value}</p>
           </div>
-          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
+          <div className={`w-11 h-11 rounded-xl ${iconBg} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}>
             {icon}
           </div>
         </div>
+        {trend && (
+          <div className="mt-3 flex items-center gap-1">
+            {trend === 'up' ? (
+              <ArrowUp className="h-3 w-3 text-emerald-500" />
+            ) : (
+              <ArrowDown className="h-3 w-3 text-red-500" />
+            )}
+            <span className={`text-xs font-medium ${trend === 'up' ? 'text-emerald-600' : 'text-red-500'}`}>
+              {trend === 'up' ? 'Improving' : 'Needs attention'}
+            </span>
+          </div>
+        )}
       </CardContent>
+      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${accent}`}></div>
     </Card>
+  );
+}
+
+interface StatRowProps {
+  label: string;
+  value: string | number;
+  icon: React.ReactNode;
+}
+
+function StatRow({ label, value, icon }: StatRowProps) {
+  return (
+    <div className="flex items-center justify-between p-2.5 bg-white border border-gray-100 rounded-xl hover:shadow-md hover:-translate-y-0.5 transition-all duration-300">
+      <div className="flex items-center gap-2.5">
+        <span className="text-gray-400">{icon}</span>
+        <span className="text-sm text-gray-600 font-medium">{label}</span>
+      </div>
+      <span className="font-semibold text-gray-900">{value}</span>
+    </div>
   );
 }
 
@@ -379,7 +453,6 @@ function PredictionCard({ prediction }: PredictionCardProps) {
     return 'text-green-600';
   };
 
-  // Calculate month indicator
   const getMonthIndicator = (days: number) => {
     const months = Math.floor(days / 30);
     if (months === 0) return 'This month';
@@ -388,7 +461,7 @@ function PredictionCard({ prediction }: PredictionCardProps) {
   };
 
   return (
-    <div className={`border rounded-lg p-4 ${getStatusColor(prediction.status)} hover:shadow-md transition-shadow`}>
+    <div className={`border rounded-xl p-4 ${getStatusColor(prediction.status)} hover:shadow-md transition-all duration-300`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center">
@@ -413,16 +486,16 @@ function PredictionCard({ prediction }: PredictionCardProps) {
                 Monthly Demand: <span className="font-semibold">{prediction.monthly_demand}</span> units
               </span>
               <span className={`font-semibold ${getDaysColor(prediction.days_until_shortage)}`}>
-                {prediction.days_until_shortage > 30 
-                  ? `${Math.round(prediction.days_until_shortage / 30)} months` 
+                {prediction.days_until_shortage > 30
+                  ? `${Math.round(prediction.days_until_shortage / 30)} months`
                   : `${prediction.days_until_shortage} days`} until shortage
               </span>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            size="sm" 
+          <Button
+            size="sm"
             variant="outline"
             className="text-purple-600 border-purple-200 hover:bg-purple-50"
             onClick={() => toast.info(`Opening ${prediction.blood_group} campaign`)}
@@ -432,7 +505,7 @@ function PredictionCard({ prediction }: PredictionCardProps) {
           </Button>
         </div>
       </div>
-      
+
       {/* Recommendation */}
       <div className="mt-3 pt-3 border-t border-gray-200/50">
         <p className="text-sm text-gray-700">
@@ -456,7 +529,7 @@ function PredictionCard({ prediction }: PredictionCardProps) {
         </div>
         <div className="flex items-center gap-2 text-xs text-gray-500">
           <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
-            <div 
+            <div
               className={`h-full rounded-full ${
                 prediction.status === 'critical' ? 'bg-red-500' :
                 prediction.status === 'low' ? 'bg-yellow-500' : 'bg-green-500'
@@ -468,25 +541,5 @@ function PredictionCard({ prediction }: PredictionCardProps) {
         </div>
       </div>
     </div>
-  );
-}
-
-// ArrowRight Component
-function ArrowRight(props: any) {
-  return (
-    <svg
-      {...props}
-      fill="none"
-      stroke="currentColor"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth={2}
-        d="M14 5l7 7m0 0l-7 7m7-7H3"
-      />
-    </svg>
   );
 }
