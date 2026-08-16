@@ -190,9 +190,9 @@ export default function DashboardLayout({
                   ? 'Donor / Patient'
                   : currentRole}
               </p>
-              {user.roles && user.roles.length > 1 && (
+              {/* {user.roles && user.roles.length > 1 && (
                 <p className="text-[10px] text-gray-400 truncate">Roles: {user.roles.join(', ')}</p>
-              )}
+              )} */}
             </div>
           </div>
         </div>
